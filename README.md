@@ -2,8 +2,8 @@
 # 🧪 2026 - Trabajo Práctico Anual
 
 ## 👤 Datos del Alumno
-- **Nombre:** Luca Gonzalo
-- **Apellido:** Trias Lupinacci
+- **Nombre:** Liam 
+- **Apellido:** Karol Trepat
 
 ---
 
@@ -13,8 +13,7 @@
 ---
 
 🧩 Link al despliegue en Render
--https://tp-dds-logistica-trias.onrender.com
--https://app.swaggerhub.com/apis/utn-893/api_tp_dds_logistica_trias/v1
+
 
 ---
 
