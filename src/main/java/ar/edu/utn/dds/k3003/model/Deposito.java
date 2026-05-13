@@ -1,6 +1,8 @@
 package ar.edu.utn.dds.k3003.model;
 
 
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,16 +11,16 @@ public class Deposito {
     private String nombre;
     private String direccion;
     private int capacidadMaxima;
-    private int stockActual;
-    private List<Paquete> listaDePaquetes;
+    public TipoAlgoritmoEnum tipoAlgoritmo;
+    private List<Paquete> stockActual;
 
-    public Deposito(String id, String nombre, String direccion, int capacidadMaxima) {
+    public Deposito(String id, TipoAlgoritmoEnum tipoAlgoritmo ,String nombre, String direccion, int capacidadMaxima, List<Paquete> stockActual) {
         this.id = id;
+        this.tipoAlgoritmo = tipoAlgoritmo;
         this.nombre = nombre;
         this.direccion = direccion;
         this.capacidadMaxima = capacidadMaxima;
-        this.stockActual = 0;
-        this.listaDePaquetes = new ArrayList<>();
+        this.stockActual = stockActual;
     }
 
 
@@ -39,13 +41,16 @@ public class Deposito {
         return capacidadMaxima;
     }
 
-    public int getStockActual() {
-        return stockActual;
-    }
-
-    public List<Paquete> getListaDePaquetes(){
+    public List<Paquete> getStockActual(){
         //return stockActual;
-        return new ArrayList<>(listaDePaquetes);
+        return new ArrayList<>(stockActual);
     }
 
+    public TipoAlgoritmoEnum getTipoAlgoritmo() {
+        return tipoAlgoritmo;
+    }
+
+    public void setTipoAlgoritmo(TipoAlgoritmoEnum tipoAlgoritmo) {
+        this.tipoAlgoritmo = tipoAlgoritmo;
+    }
 }

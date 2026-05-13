@@ -32,20 +32,16 @@ public class Fachada implements FachadaLogistica {
 
         Deposito deposito = new Deposito(
                 id,
-                depositoDTO.nombre(),
-                depositoDTO.direccion(),
-                depositoDTO.capacidadMaxima()
-        );
-
-        depositos.put(id, deposito);
-
-        return new DepositoDTO(
-                id,
+                null,
                 depositoDTO.nombre(),
                 depositoDTO.direccion(),
                 depositoDTO.capacidadMaxima(),
                 new ArrayList<>()
         );
+
+        depositos.put(id, deposito);
+
+        return toDTO(deposito);
     }
 
     @Override
@@ -104,28 +100,31 @@ public class Fachada implements FachadaLogistica {
     }
 
     @Override
-    public void setAlgoritmoMM() {
-        this.algoritmo = new AlgoritmoPrioridadSubatendidos();
+    public void setAlgoritmoMM(String depositoID, TipoAlgoritmoEnum tipoAlgoritmo) {
+        Deposito deposito = toDomain(buscarDepositoPorID(depositoID));
+        deposito.setTipoAlgoritmo(tipoAlgoritmo);
     }
 
     @Override
-    public AsignacionDTO ejecutarMatchmaking(PaqueteDTO paqueteDTO, List<NecesidadDeEntidadDTO> depositoDTO) {
+    public AsignacionDTO ejecutarMatchmaking(String depositoID, PaqueteDTO paqueteDTO, List<NecesidadMaterialDTO> necesidades) {
         if (paqueteDTO == null) {
             throw new RuntimeException("Paquete nulo");
         }
-        Paquete paquete = toDomain(paqueteDTO);
-
-        List<NecesidadLogistica> necesidades =
-                        depositoDTO
-                        .stream()
-                        .map(this::toDomain)
-                        .toList();
-
         if (necesidades.isEmpty()) {
             throw new NoSuchElementException("No hay necesidades");
         }
 
-        NecesidadLogistica elegida = algoritmo.elegir(necesidades);
+        Deposito deposito = toDomain(buscarDepositoPorID(depositoID));
+
+        if(deposito == null){
+            throw new NoSuchElementException("No existe deposito id");
+        }
+        Paquete paquete = toDomain(paqueteDTO);
+
+        List<NecesidadLogistica> necesidadesLogistica = necesidades.stream().map(this::toDomain).toList();
+
+        AlgoritmoAsignacion algoritmo = AlgoritmoFactory.crear(deposito.tipoAlgoritmo);
+        NecesidadLogistica elegida = algoritmo.elegir(necesidadesLogistica);
 
         String asignacionID = UUID.randomUUID().toString();
 
@@ -176,10 +175,11 @@ public class Fachada implements FachadaLogistica {
 
         return new DepositoDTO(
                 deposito.getId(),
+                deposito.getTipoAlgoritmo(),
                 deposito.getNombre(),
                 deposito.getDireccion(),
                 deposito.getCapacidadMaxima(),
-                new ArrayList<>() // por ahora vacío o mapeado después
+                deposito.getStockActual().stream().map(this::toDTO).toList()
         );
     }
 
@@ -206,6 +206,19 @@ public class Fachada implements FachadaLogistica {
 
     // ToDomain
 
+
+    private Deposito toDomain(DepositoDTO dto) {
+
+        return new Deposito(
+                dto.id(),
+                dto.algoritmo(),
+                dto.nombre(),
+                dto.direccion(),
+                dto.capacidadMaxima(),
+                dto.stockActual().stream().map(this::toDomain).toList()
+        );
+    }
+
     private Paquete toDomain(PaqueteDTO dto) {
         return new Paquete(
                 dto.id(),
@@ -226,26 +239,11 @@ public class Fachada implements FachadaLogistica {
         );
     }
 
-    private NecesidadLogistica toDomain(NecesidadDeEntidadDTO dto){
+    private NecesidadLogistica toDomain(NecesidadMaterialDTO dto){
         return new NecesidadLogistica(
                 dto.id(),
                 dto.entidadID(),
                 dto.cantidadObjetivo()
-        );
-    }
-
-
-
-    // mapear
-
-    private NecesidadDeEntidadDTO mapear(NecesidadMaterialDTO n) {
-        return new NecesidadDeEntidadDTO(
-                n.id(),
-                n.entidadID(),
-                n.nivelDeUrgencia(),
-                n.descripcion(),
-                n.cantidadObjetivo(),
-                n.productoSolicitadoID()
         );
     }
 }
