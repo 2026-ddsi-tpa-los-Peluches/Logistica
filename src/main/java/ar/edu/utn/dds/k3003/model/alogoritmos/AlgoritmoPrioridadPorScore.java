@@ -9,9 +9,19 @@ import java.util.List;
 public class AlgoritmoPrioridadPorScore implements AlgoritmoAsignacion {
 
     @Override
-    public NecesidadLogistica elegir(List<NecesidadLogistica> necesidades) {
+    public NecesidadLogistica elegir(List<NecesidadLogistica> necesidades, Integer cantidadDonada) {
         return necesidades.stream()
-                .max(Comparator.comparing(NecesidadLogistica::score))
+                .max(Comparator.comparing(n-> calcularScore(n,cantidadDonada)))
                 .orElseThrow();
+    }
+
+
+    private double calcularScore(NecesidadLogistica necesidad, Integer cantidadDonada) {
+
+        double urgencia = necesidad.urgencia();
+        double cantidadProducto = cantidadDonada;
+        double cantidadObjetivo = necesidad.cantidadObjetivo();
+
+        return urgencia / (cantidadProducto / cantidadObjetivo);
     }
 }

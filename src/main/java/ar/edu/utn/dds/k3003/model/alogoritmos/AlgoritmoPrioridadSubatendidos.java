@@ -9,7 +9,7 @@ import java.util.List;
 public class AlgoritmoPrioridadSubatendidos implements AlgoritmoAsignacion {
 
     @Override
-    public NecesidadLogistica elegir(List<NecesidadLogistica> necesidades) {
+    public NecesidadLogistica elegir(List<NecesidadLogistica> necesidades, Integer cantidadDonada) {
         if (necesidades == null || necesidades.isEmpty()) {
             throw new RuntimeException("No hay necesidades");
         }
