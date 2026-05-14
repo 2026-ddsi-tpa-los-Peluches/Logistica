@@ -14,7 +14,7 @@ public class AlgoritmoPrioridadSubatendidos implements AlgoritmoAsignacion {
             throw new RuntimeException("No hay necesidades");
         }
         return necesidades.stream()
-                .max(Comparator.comparing(NecesidadLogistica::cantidadObjetivo))
+                .max(Comparator.comparing(NecesidadLogistica::getCantidadObjetivo))
                 .orElseThrow();
     }
 }

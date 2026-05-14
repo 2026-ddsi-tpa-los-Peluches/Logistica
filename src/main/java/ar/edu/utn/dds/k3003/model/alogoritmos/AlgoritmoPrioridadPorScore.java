@@ -18,9 +18,9 @@ public class AlgoritmoPrioridadPorScore implements AlgoritmoAsignacion {
 
     private double calcularScore(NecesidadLogistica necesidad, Integer cantidadDonada) {
 
-        double urgencia = necesidad.urgencia();
+        double urgencia = necesidad.getUrgencia();
         double cantidadProducto = cantidadDonada;
-        double cantidadObjetivo = necesidad.cantidadObjetivo();
+        double cantidadObjetivo = necesidad.getCantidadObjetivo();
 
         return urgencia / (cantidadProducto / cantidadObjetivo);
     }

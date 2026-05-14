@@ -135,11 +135,17 @@ public class Fachada implements FachadaLogistica {
 
         String asignacionID = UUID.randomUUID().toString();
 
+        if(elegida.getId() == null){
+            elegida.setId("necesidad1");
+        }
+
+
+
 
         Asignacion asignacion = new Asignacion(
                 asignacionID,
                 paquete,
-                elegida.id(),
+                elegida.getId(),
                 LocalDateTime.now(),
                 EstadoAsginacionEnum.ASIGNADA
         );
@@ -155,6 +161,11 @@ public class Fachada implements FachadaLogistica {
             throw new RuntimeException("Paquete nulo");
         }
 
+        fachadaDonaciones.cambiarEstadoDeDonacion(
+                paqueteDTO.donacionID(),
+                EstadoDonacionEnum.ACEPTADA
+        );
+
         Asignacion asignacion = asignacionesPorPaquete.get(paqueteDTO.id());
 
         if (asignacion == null) {
@@ -166,10 +177,7 @@ public class Fachada implements FachadaLogistica {
                 paqueteDTO.cantidad()
         );
 
-        fachadaDonaciones.cambiarEstadoDeDonacion(
-                paqueteDTO.donacionID(),
-                EstadoDonacionEnum.ACEPTADA
-        );
+
 
         asignacion.completada();
     }
