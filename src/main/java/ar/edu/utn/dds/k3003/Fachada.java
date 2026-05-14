@@ -8,7 +8,6 @@ import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaDonadoresYEntidades;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
 import ar.edu.utn.dds.k3003.model.*;
 import ar.edu.utn.dds.k3003.model.alogoritmos.AlgoritmoPrioridadSubatendidos;
-
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -19,6 +18,8 @@ public class Fachada implements FachadaLogistica {
     private Map<String, Deposito> depositos = new HashMap<>();
     private Map<String, Asignacion> asignacionesPorPaquete = new HashMap<>();
     private AlgoritmoAsignacion algoritmo = new AlgoritmoPrioridadSubatendidos();
+
+    private Service service = new Service();
 
     public Fachada() {
     }
@@ -81,27 +82,36 @@ public class Fachada implements FachadaLogistica {
             throw new NoSuchElementException("No existe el depósito");
         }
 
-        List<NecesidadDeEntidadDTO> necesidadDeProducto =
-                fachadaDonadoresYEntidades.obtenerNecesidadesInsatisfechasDe(productoID).
-                        stream().map(this::mapear).toList();
+
+        List<NecesidadMaterialDTO> necesidadesDeProducto =
+                fachadaDonadoresYEntidades.obtenerNecesidadesInsatisfechasDe(productoID);
 
 
-        if (necesidadDeProducto.isEmpty()) {
+        if (necesidadesDeProducto.isEmpty()) {
             throw new NoSuchElementException("No hay necesidades para este producto");
         }
+
+
         String paqueteID = UUID.randomUUID().toString();
         Paquete paquete = new Paquete(paqueteID, donacionID, productoID, cantidad); // no me gusta que paquete tenga donacionId
 
-        AsignacionDTO asignacionDTO = ejecutarMatchmaking(toDTO(paquete), necesidadDeProducto);
 
-        fachadaDonadoresYEntidades.satisfacerNecesidad(asignacionDTO.necesidadID(), paquete.cantidad());
+        List<NecesidadMaterialDTO> necesidadesAplicables = necesidadesDeProducto.stream().filter(necesidadDeProducto ->
+                this.service.esNecesidadAplicable(necesidadDeProducto, paquete.cantidad())).toList();
+
+        AsignacionDTO asignacionDTO = ejecutarMatchmaking(deposito.getId(), toDTO(paquete), necesidadesAplicables);
+
+        //fachadaDonadoresYEntidades.satisfacerNecesidad(asignacionDTO.necesidadID(), paquete.cantidad());
 
         return toDTO(deposito); //raro que retorne deposito
     }
 
     @Override
     public void setAlgoritmoMM(String depositoID, TipoAlgoritmoEnum tipoAlgoritmo) {
-        Deposito deposito = toDomain(buscarDepositoPorID(depositoID));
+        Deposito deposito = depositos.get(depositoID);
+        if (deposito == null) {
+            throw new NoSuchElementException();
+        }
         deposito.setTipoAlgoritmo(tipoAlgoritmo);
     }
 
@@ -114,17 +124,14 @@ public class Fachada implements FachadaLogistica {
             throw new NoSuchElementException("No hay necesidades");
         }
 
-        Deposito deposito = toDomain(buscarDepositoPorID(depositoID));
+        Deposito deposito = depositos.get(depositoID);
 
-        if(deposito == null){
-            throw new NoSuchElementException("No existe deposito id");
-        }
         Paquete paquete = toDomain(paqueteDTO);
 
         List<NecesidadLogistica> necesidadesLogistica = necesidades.stream().map(this::toDomain).toList();
 
         AlgoritmoAsignacion algoritmo = AlgoritmoFactory.crear(deposito.tipoAlgoritmo);
-        NecesidadLogistica elegida = algoritmo.elegir(necesidadesLogistica);
+        NecesidadLogistica elegida = algoritmo.elegir(necesidadesLogistica, paquete.cantidad());
 
         String asignacionID = UUID.randomUUID().toString();
 
@@ -147,15 +154,23 @@ public class Fachada implements FachadaLogistica {
         if (paqueteDTO == null) {
             throw new RuntimeException("Paquete nulo");
         }
-        fachadaDonaciones.cambiarEstadoDeDonacion(
-                paqueteDTO.donacionID(),
-                EstadoDonacionEnum.ACEPTADA
-        );
+
         Asignacion asignacion = asignacionesPorPaquete.get(paqueteDTO.id());
 
         if (asignacion == null) {
             throw new NoSuchElementException("No existe asignación para ese paquete");
         }
+
+        fachadaDonadoresYEntidades.satisfacerNecesidad(
+                asignacion.getNecesidadID(),
+                paqueteDTO.cantidad()
+        );
+
+        fachadaDonaciones.cambiarEstadoDeDonacion(
+                paqueteDTO.donacionID(),
+                EstadoDonacionEnum.ACEPTADA
+        );
+
         asignacion.completada();
     }
 
@@ -183,7 +198,7 @@ public class Fachada implements FachadaLogistica {
         );
     }
 
-    private PaqueteDTO toDTO(Paquete paquete){
+    private PaqueteDTO toDTO(Paquete paquete) {
         return new PaqueteDTO(
                 paquete.paqueteID(),
                 paquete.donacionID(),
@@ -229,7 +244,7 @@ public class Fachada implements FachadaLogistica {
     }
 
 
-    private Asignacion toDomain(AsignacionDTO dto, Paquete paquete){
+    private Asignacion toDomain(AsignacionDTO dto, Paquete paquete) {
         return new Asignacion(
                 dto.id(),
                 paquete,
@@ -239,11 +254,13 @@ public class Fachada implements FachadaLogistica {
         );
     }
 
-    private NecesidadLogistica toDomain(NecesidadMaterialDTO dto){
-        return new NecesidadLogistica(
-                dto.id(),
-                dto.entidadID(),
-                dto.cantidadObjetivo()
-        );
-    }
+
+     private NecesidadLogistica toDomain(NecesidadMaterialDTO dto){
+          return new NecesidadLogistica(
+                  dto.id(),
+                  dto.entidadID(),
+                  dto.nivelDeUrgencia(),
+                  dto.cantidadObjetivo()
+          );
+      }
 }

@@ -3,8 +3,8 @@ package ar.edu.utn.dds.k3003.model;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.EstadoAsginacionEnum;
 
 import java.time.LocalDateTime;
-
-import static ar.edu.utn.dds.k3003.catedra.dtos.logistica.EstadoAsginacionEnum.COMPLETADA;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Asignacion {
     String id;
@@ -12,6 +12,7 @@ public class Asignacion {
     String necesidadID;
     LocalDateTime fecha;
     EstadoAsginacionEnum estado;
+    private List<HistorialEstadoAsignacion> historialEstadoAsignaciones;
 
 
     public Asignacion(String id, Paquete paquete, String necesidadID, LocalDateTime fecha, EstadoAsginacionEnum estado) {
@@ -20,7 +21,7 @@ public class Asignacion {
         this.necesidadID = necesidadID;
         this.fecha = fecha;
         this.estado = estado;
-
+        this.historialEstadoAsignaciones = new ArrayList<>();
     }
 
 
