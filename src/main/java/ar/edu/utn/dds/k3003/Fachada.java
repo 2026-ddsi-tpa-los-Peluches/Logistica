@@ -7,21 +7,27 @@ import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaDonaciones;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaDonadoresYEntidades;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
 import ar.edu.utn.dds.k3003.model.*;
-import ar.edu.utn.dds.k3003.model.alogoritmos.AlgoritmoPrioridadSubatendidos;
+import ar.edu.utn.dds.k3003.repositories.asignaciones.AsignacionesRepository;
+import ar.edu.utn.dds.k3003.repositories.asignaciones.InMemoryAsignacionesRepository;
+import ar.edu.utn.dds.k3003.repositories.depositos.DepositosRepository;
+import ar.edu.utn.dds.k3003.repositories.depositos.InMemoryDepositosRepository;
+import lombok.val;
+
 import java.time.LocalDateTime;
 import java.util.*;
 
 public class Fachada implements FachadaLogistica {
     private FachadaDonadoresYEntidades fachadaDonadoresYEntidades;
     private FachadaDonaciones fachadaDonaciones;
+    private final DepositosRepository depositoRepository;
+    private final AsignacionesRepository asignacionRepository;
 
-    private Map<String, Deposito> depositos = new HashMap<>();
-    private Map<String, Asignacion> asignacionesPorPaquete = new HashMap<>();
-    private AlgoritmoAsignacion algoritmo = new AlgoritmoPrioridadSubatendidos();
-
-    private Service service = new Service();
+    private final NecesidadService necesidadService;
 
     public Fachada() {
+        this.depositoRepository = new InMemoryDepositosRepository();
+        this.asignacionRepository = new InMemoryAsignacionesRepository();
+        this.necesidadService = new NecesidadService();
     }
 
     @Override
@@ -40,7 +46,7 @@ public class Fachada implements FachadaLogistica {
                 new ArrayList<>()
         );
 
-        depositos.put(id, deposito);
+        depositoRepository.save(deposito);
 
         return toDTO(deposito);
     }
@@ -48,24 +54,24 @@ public class Fachada implements FachadaLogistica {
     @Override
     public DepositoDTO buscarDepositoPorID(String depositoID) throws NoSuchElementException {
 
-        Deposito deposito = depositos.get(depositoID);
+        val deposito = depositoRepository.findById(depositoID);
 
-        if (deposito == null) {
+        if (deposito.isEmpty()) {
             throw new NoSuchElementException("No existe el depósito");
         }
 
-        return toDTO(deposito);
+        return toDTO(deposito.get());
     }
 
     @Override
     public AsignacionDTO buscarAsignacionPorPaqueteID(String paqueteID) throws NoSuchElementException {
 
-        Asignacion asignacion = asignacionesPorPaquete.get(paqueteID);
+        val asignacion = asignacionRepository.findAsignacionByPaqueteId(paqueteID);
 
-        if (asignacion == null) {
+        if (asignacion.isEmpty()) {
             throw new NoSuchElementException("No existe asignación");
         }
-        return toDTO(asignacion);
+        return toDTO(asignacion.get());
     }
 
     @Override
@@ -76,12 +82,13 @@ public class Fachada implements FachadaLogistica {
             throw new IllegalArgumentException("Cantidad inválida");
         }
 
-        Deposito deposito = depositos.get(depositoID);
+        val depositoOptional = depositoRepository.findById(depositoID);
 
-        if (deposito == null) {
+
+        if (depositoOptional.isEmpty()) {
             throw new NoSuchElementException("No existe el depósito");
         }
-
+        val deposito = depositoOptional.get();
 
         List<NecesidadMaterialDTO> necesidadesDeProducto =
                 fachadaDonadoresYEntidades.obtenerNecesidadesInsatisfechasDe(productoID);
@@ -97,7 +104,7 @@ public class Fachada implements FachadaLogistica {
 
 
         List<NecesidadMaterialDTO> necesidadesAplicables = necesidadesDeProducto.stream().filter(necesidadDeProducto ->
-                this.service.esNecesidadAplicable(necesidadDeProducto, paquete.cantidad())).toList();
+                this.necesidadService.esNecesidadAplicable(necesidadDeProducto, paquete.getCantidad())).toList();
 
         AsignacionDTO asignacionDTO = ejecutarMatchmaking(deposito.getId(), toDTO(paquete), necesidadesAplicables);
 
@@ -108,10 +115,11 @@ public class Fachada implements FachadaLogistica {
 
     @Override
     public void setAlgoritmoMM(String depositoID, TipoAlgoritmoEnum tipoAlgoritmo) {
-        Deposito deposito = depositos.get(depositoID);
-        if (deposito == null) {
+        val depositoOptional = depositoRepository.findById(depositoID);
+        if (depositoOptional.isEmpty()) {
             throw new NoSuchElementException();
         }
+        val deposito = depositoOptional.get();
         deposito.setTipoAlgoritmo(tipoAlgoritmo);
     }
 
@@ -124,14 +132,18 @@ public class Fachada implements FachadaLogistica {
             throw new NoSuchElementException("No hay necesidades");
         }
 
-        Deposito deposito = depositos.get(depositoID);
+        val depositoOptional = depositoRepository.findById(depositoID);
+        if (depositoOptional.isEmpty()) {
+            throw new NoSuchElementException();
+        }
+        val deposito = depositoOptional.get();
 
         Paquete paquete = toDomain(paqueteDTO);
 
         List<NecesidadLogistica> necesidadesLogistica = necesidades.stream().map(this::toDomain).toList();
 
         AlgoritmoAsignacion algoritmo = AlgoritmoFactory.crear(deposito.tipoAlgoritmo);
-        NecesidadLogistica elegida = algoritmo.elegir(necesidadesLogistica, paquete.cantidad());
+        NecesidadLogistica elegida = algoritmo.elegir(necesidadesLogistica, paquete.getCantidad());
 
         String asignacionID = UUID.randomUUID().toString();
 
@@ -150,7 +162,7 @@ public class Fachada implements FachadaLogistica {
                 EstadoAsginacionEnum.ASIGNADA
         );
 
-        asignacionesPorPaquete.put(paquete.paqueteID(), asignacion);
+        asignacionRepository.save(asignacion);
 
         return toDTO(asignacion);
     }
@@ -166,11 +178,13 @@ public class Fachada implements FachadaLogistica {
                 EstadoDonacionEnum.ACEPTADA
         );
 
-        Asignacion asignacion = asignacionesPorPaquete.get(paqueteDTO.id());
+        val asignacionOptional = asignacionRepository.findAsignacionByPaqueteId(paqueteDTO.id());
 
-        if (asignacion == null) {
+        if (asignacionOptional.isEmpty()) {
             throw new NoSuchElementException("No existe asignación para ese paquete");
         }
+
+        val asignacion = asignacionOptional.get();
 
         fachadaDonadoresYEntidades.satisfacerNecesidad(
                 asignacion.getNecesidadID(),
@@ -208,10 +222,10 @@ public class Fachada implements FachadaLogistica {
 
     private PaqueteDTO toDTO(Paquete paquete) {
         return new PaqueteDTO(
-                paquete.paqueteID(),
-                paquete.donacionID(),
-                paquete.productoID(),
-                paquete.cantidad()
+                paquete.getPaqueteID(),
+                paquete.getDonacionID(),
+                paquete.getProductoID(),
+                paquete.getCantidad()
         );
     }
 
@@ -219,7 +233,7 @@ public class Fachada implements FachadaLogistica {
 
         return new AsignacionDTO(
                 asignacion.getId(),
-                asignacion.getPaquete().paqueteID(),
+                asignacion.getPaquete().getPaqueteID(),
                 asignacion.getNecesidadID(),
                 asignacion.getFecha(),
                 asignacion.getEstado()
@@ -238,7 +252,9 @@ public class Fachada implements FachadaLogistica {
                 dto.nombre(),
                 dto.direccion(),
                 dto.capacidadMaxima(),
-                dto.stockActual().stream().map(this::toDomain).toList()
+                dto.stockActual() == null
+                        ? new ArrayList<>()
+                        : dto.stockActual().stream().map(this::toDomain).toList()
         );
     }
 

@@ -53,6 +53,26 @@ public class Asignacion {
     public void completada(){
         this.estado = EstadoAsginacionEnum.COMPLETADA;
     }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setEstado(EstadoAsginacionEnum estado) {
+        this.estado = estado;
+    }
+
+    public void setFecha(LocalDateTime fecha) {
+        this.fecha = fecha;
+    }
+
+    public void setNecesidadID(String necesidadID) {
+        this.necesidadID = necesidadID;
+    }
+
+    public void setPaquete(Paquete paquete) {
+        this.paquete = paquete;
+    }
 }
 
 

@@ -53,4 +53,8 @@ public class Deposito {
     public void setTipoAlgoritmo(TipoAlgoritmoEnum tipoAlgoritmo) {
         this.tipoAlgoritmo = tipoAlgoritmo;
     }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 }
