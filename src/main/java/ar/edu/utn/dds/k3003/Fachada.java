@@ -14,11 +14,13 @@ import ar.edu.utn.dds.k3003.repositories.depositos.InMemoryDepositosRepository;
 import ar.edu.utn.dds.k3003.repositories.paquetes.InMemoryPaquetesRepository;
 import ar.edu.utn.dds.k3003.repositories.paquetes.PaquetesRepository;
 import lombok.val;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
 
 
+@Service
 public class Fachada implements FachadaLogistica {
     private FachadaDonadoresYEntidades fachadaDonadoresYEntidades;
     private FachadaDonaciones fachadaDonaciones;
