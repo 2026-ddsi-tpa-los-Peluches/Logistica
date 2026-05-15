@@ -86,6 +86,10 @@ public class DepositoController {
     }
 
     @PostMapping("/{id}/donacion")
+    // Este endpoint depende del módulo Donadores y Entidades.
+    // Para gestionar la donación se necesitan las necesidades insatisfechas
+    // asociadas al producto donado. Como los módulos no están integrados,
+    // actualmente este endpoint requiere mocks/fakes para poder testearse.
     public ResponseEntity<?> gestionarDonacion(
             @PathVariable String id,
             @RequestBody DonacionRequest donacionRequest

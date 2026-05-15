@@ -2,6 +2,7 @@ package ar.edu.utn.dds.k3003.controllers;
 
 import ar.edu.utn.dds.k3003.Fachada;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.PaqueteDTO;
+import ar.edu.utn.dds.k3003.controllers.requests.PaqueteRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,10 +18,13 @@ public class EntregaController {
     }
 
     @PostMapping
-    public ResponseEntity<?> registrarEntrega (@PathVariable String id) {
+    public ResponseEntity<?> registrarEntrega (@RequestBody PaqueteRequest paqueteRequest) {
+        // Este endpoint depende de los módulos (Donadores y Entidades) y Donaciones
+        // Como los módulos no están integrados,
+        // actualmente este endpoint requiere mocks/fakes para poder testearse.
 
         try {
-            PaqueteDTO paqueteDTO = fachada.buscarPaquetePorID(id);
+                PaqueteDTO paqueteDTO = fachada.buscarPaquetePorID(paqueteRequest.paqueteId());
             fachada.reportarEntrega(paqueteDTO);
 
             return ResponseEntity

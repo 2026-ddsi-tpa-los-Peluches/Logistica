@@ -12,6 +12,10 @@ import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/asignaciones")
+// Este endpoint depende del módulo Donadores y Entidades.
+// Para gestionar la donación se necesitan las necesidades insatisfechas
+// asociadas al producto donado. Como los módulos no están integrados,
+// actualmente este endpoint requiere mocks/fakes para poder testearse.
 public class AsignacionController {
     private final Fachada fachada;
 

@@ -1,6 +1,9 @@
 package ar.edu.utn.dds.k3003.model;
+import ar.edu.utn.dds.k3003.Fachada;
 import ar.edu.utn.dds.k3003.catedra.ClassFinder;
+import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.EstadoDonacionEnum;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
+import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.TipoNecesidadMaterialEnum;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.*;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaDonaciones;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaDonadoresYEntidades;
@@ -18,117 +21,384 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import static org.mockito.Mockito.*;
+
 
 @ExtendWith(MockitoExtension.class)
 @EnabledIf("ar.edu.utn.dds.k3003.catedra.logistica.LogisticaTest#condicion")
 
 
 public class TestPropiosLogistica {
-//   FachadaLogistica instancia;
-//    @Mock FachadaDonadoresYEntidades fachadaDonadoresYEntidades;
-//    @Mock FachadaDonaciones fachadaDonaciones;
-//
-//    DepositoDTO depositoEjemplo;
-//    NecesidadMaterialDTO necesidadDeEjemplo;
-//    PaqueteDTO paqueteEjemplo;
-//
-//    @SneakyThrows
-//    @BeforeEach
-//    void setUp() {
-//
-//        var clazz = ClassFinder.findClass();
-//        instancia = (FachadaLogistica) clazz.getDeclaredConstructor().newInstance();
-//        instancia.setAlgoritmoMM();
-//
-//        instancia.setFachadaDonadoresYEntidades(fachadaDonadoresYEntidades);
-//        instancia.setFachadaDonaciones(fachadaDonaciones);
-//
-//        depositoEjemplo = new DepositoDTO(null, "deposito1", "direccion1", 1000, null);
-//        necesidadDeEjemplo =
-//                new NecesidadMaterialDTO(null, "entidad1", 5, "descripcion1", 10, "producto1");
-//        paqueteEjemplo = new PaqueteDTO("paquete1", "donacion1", "producto1", 10);
-//    }
-//
-//
-//
-//    @Test
-//    void testPropioAgregarDeposito() {
-//        // Capacidad maxima mayor a 50 cuando la capacidad maxima asignada fue 100
-//        DepositoDTO dto = new DepositoDTO(null, "Depo", "Dir", 100, null);
-//        DepositoDTO retorno = instancia.agregarDeposito(dto);
-//
-//        Assertions.assertNotNull(retorno.id());
-//        Assertions.assertEquals(retorno.nombre(), dto.nombre());
-//        Assertions.assertTrue(retorno.capacidadMaxima() > 50);
-//    }
-//
-//    @Test
-//    void testPropioBuscarDepositoPorID() {
-//        DepositoDTO creado = instancia.agregarDeposito(depositoEjemplo);
-//
-//        DepositoDTO encontrado = instancia.buscarDepositoPorID(creado.id());
-//
-//        Assertions.assertEquals(creado.id(), encontrado.id());
-//    }
-//
-//    @Test
-//    void testPropioBuscarAsignacionPorPaqueteID() {
-//
-//        try {
-//            instancia.buscarAsignacionPorPaqueteID("paqueteIdQueNoExisteEnMiSistema");
-//        } catch (NoSuchElementException e){
-//            String errorString = e.toString();
-//            Assertions.assertEquals("java.util.NoSuchElementException: No existe asignación", errorString);
-//        }
-//    }
-//
-//    @Test
-//    void testPropioGestionarDonacion() {
-//        // Verifica que al gestionar una donación, si existen necesidades para el producto,
-//        // se seleccione una y se llame a satisfacerNecesidad con la cantidad donada.
-//
-//        instancia.agregarDeposito(depositoEjemplo);
-//        DepositoDTO depo = instancia.agregarDeposito(depositoEjemplo);
-//
-//        NecesidadMaterialDTO necesidad = new NecesidadMaterialDTO(
-//                "74-3-188", "com-cba-23", 3, "necesito vasos", 34, "prod74"
-//        );
-//
-//        org.mockito.Mockito
-//                .when(fachadaDonadoresYEntidades.obtenerNecesidadesInsatisfechasDe("prod74"))
-//                .thenReturn(List.of(necesidad));
-//
-//        instancia.gestionarDonacion(depo.id(), "74_5_16-04-26", "prod74", 5);
-//
-//            Mockito.verify(fachadaDonadoresYEntidades)
-//                .satisfacerNecesidad("74-3-188", 5);
-//    }
-//
-//    @Test
-//    void testPropioEjecutarMatchmaking() {
-//        // Verifica que el algoritmo de matchmaking seleccione la necesidad
-//        // con mayor cantidadObjetivo (la más sub-atendida).
-//        PaqueteDTO paquete = new PaqueteDTO("17-18-49", "17_18_17-08-25", "prod17", 18);
-//
-//        NecesidadMaterialDTO n1 = new NecesidadMaterialDTO("17-20-188", "esc-men-50", 8, "sillas para alumnos", 20, "prod17");
-//        NecesidadMaterialDTO n2 = new NecesidadMaterialDTO("17-40-189", "hos-cor-67", 1, "sillas para pacientes", 40, "prod17");
-//
-//        AsignacionDTO asignacion = instancia.ejecutarMatchmaking(paquete, List.of(n1, n2));
-//
-//        Assertions.assertEquals("17-40-189", asignacion.necesidadID()); // el de mayor cantidad
-//    }
-//
-//    @Test
-//    void testPropioReportarEntrega() {
-//
-//        // gestionar donacion -> recibe una donacion y trata de darsela a una entidad segun el algoritmo
-//        // ejecutarMM -> recibe un paquete y una lista de entidades que necesitan un producto x y
-//        // devuelve una asignacion de la entidad seleccionada
-//        try {
-//            instancia.reportarEntrega(paqueteEjemplo);
-//        } catch (NoSuchElementException e){
-//            String errorString = e.toString();
-//            Assertions.assertEquals("java.util.NoSuchElementException: No existe asignación para ese paquete", errorString);
-//        }
-//    }
+
+
+    Fachada instancia;
+
+    @Mock
+    FachadaDonadoresYEntidades fachadaDonadoresYEntidades;
+
+    @Mock
+    FachadaDonaciones fachadaDonaciones;
+
+    DepositoDTO depositoEjemplo;
+    NecesidadMaterialDTO necesidadEjemplo;
+    PaqueteDTO paqueteEjemplo;
+
+    @SneakyThrows
+    @BeforeEach
+    void setUp() {
+
+        instancia = new Fachada();
+
+        instancia.setFachadaDonadoresYEntidades(fachadaDonadoresYEntidades);
+        instancia.setFachadaDonaciones(fachadaDonaciones);
+
+        depositoEjemplo =
+                new DepositoDTO(
+                        null,
+                        null,
+                        "Deposito Central",
+                        "Direccion 123",
+                        100,
+                        null
+                );
+
+        necesidadEjemplo =
+                new NecesidadMaterialDTO(
+                        "necesidad1",
+                        "entidad1",
+                        10,
+                        "descripcion",
+                        5,
+                        "producto1",
+                        TipoNecesidadMaterialEnum.EXTRAORDINARIA
+                );
+
+        paqueteEjemplo =
+                new PaqueteDTO(
+                        "paquete1",
+                        "donacion1",
+                        "producto1",
+                        10
+                );
+    }
+
+    @Test
+    void testObtenerDepositos() {
+
+        instancia.agregarDeposito(depositoEjemplo);
+
+        List<DepositoDTO> depositos = instancia.obtenerDepositos();
+
+        Assertions.assertNotNull(depositos);
+        Assertions.assertEquals(1, depositos.size());
+        Assertions.assertEquals("Deposito Central", depositos.getFirst().nombre());
+    }
+
+    @Test
+    void testBorrarDepositoPorID() {
+
+        DepositoDTO deposito = instancia.agregarDeposito(depositoEjemplo);
+
+        DepositoDTO eliminado = instancia.borrarDepositoPorID(deposito.id());
+
+        Assertions.assertNotNull(eliminado);
+        Assertions.assertEquals(deposito.id(), eliminado.id());
+
+        Assertions.assertThrows(
+                NoSuchElementException.class,
+                () -> instancia.buscarDepositoPorID(deposito.id())
+        );
+    }
+
+    @Test
+    void testBuscarAsignacionPorID() {
+
+        DepositoDTO deposito = instancia.agregarDeposito(depositoEjemplo);
+
+        instancia.setAlgoritmoMM(
+                deposito.id(),
+                TipoAlgoritmoEnum.SUB_ATENDIDOS
+        );
+
+        AsignacionDTO asignacion =
+                instancia.ejecutarMatchmaking(
+                        deposito.id(),
+                        paqueteEjemplo,
+                        List.of(necesidadEjemplo)
+                );
+
+        AsignacionDTO encontrada =
+                instancia.buscarAsignacionPorID(asignacion.id());
+
+        Assertions.assertNotNull(encontrada);
+        Assertions.assertEquals(asignacion.id(), encontrada.id());
+    }
+
+    @Test
+    void testBuscarAsignacionPorIDFallido() {
+
+        Assertions.assertThrows(
+                NoSuchElementException.class,
+                () -> instancia.buscarAsignacionPorID("id-inexistente")
+        );
+    }
+
+    @Test
+    void testBuscarPaquetePorID() {
+
+        when(fachadaDonadoresYEntidades.obtenerNecesidadesInsatisfechasDe("producto1"))
+                .thenReturn(List.of(necesidadEjemplo));
+
+        DepositoDTO deposito = instancia.agregarDeposito(depositoEjemplo);
+
+        instancia.setAlgoritmoMM(
+                deposito.id(),
+                TipoAlgoritmoEnum.SUB_ATENDIDOS
+        );
+
+        instancia.gestionarDonacion(
+                deposito.id(),
+                "donacion1",
+                "producto1",
+                10
+        );
+
+        PaqueteDTO paquete = instancia.buscarPaquetePorID("1");
+
+        Assertions.assertNotNull(paquete);
+        Assertions.assertEquals("producto1", paquete.producto());
+    }
+
+    @Test
+    void testBuscarPaquetePorIDFallido() {
+
+        Assertions.assertThrows(
+                NoSuchElementException.class,
+                () -> instancia.buscarPaquetePorID("inexistente")
+        );
+    }
+
+    @Test
+    void testGestionarDonacionSinNecesidades() {
+
+        when(fachadaDonadoresYEntidades.obtenerNecesidadesInsatisfechasDe("producto1"))
+                .thenReturn(List.of());
+
+        DepositoDTO deposito = instancia.agregarDeposito(depositoEjemplo);
+
+        instancia.setAlgoritmoMM(
+                deposito.id(),
+                TipoAlgoritmoEnum.SUB_ATENDIDOS
+        );
+
+        Assertions.assertThrows(
+                NoSuchElementException.class,
+                () -> instancia.gestionarDonacion(
+                        deposito.id(),
+                        "donacion1",
+                        "producto1",
+                        10
+                )
+        );
+    }
+
+    @Test
+    void testGestionarDonacionRecurrenteNoAceptaParcialidad() {
+
+        NecesidadMaterialDTO necesidadRecurrente =
+                new NecesidadMaterialDTO(
+                        "necesidad1",
+                        "entidad1",
+                        5,
+                        "Necesita alimentos semanalmente",
+                        100,
+                        "producto1",
+                        TipoNecesidadMaterialEnum.RECURRENTE
+                );
+
+        when(fachadaDonadoresYEntidades
+                .obtenerNecesidadesInsatisfechasDe("producto1"))
+                .thenReturn(List.of(necesidadRecurrente));
+
+        DepositoDTO deposito =
+                instancia.agregarDeposito(depositoEjemplo);
+
+        instancia.setAlgoritmoMM(
+                deposito.id(),
+                TipoAlgoritmoEnum.SUB_ATENDIDOS
+        );
+
+        Assertions.assertThrows(
+                NoSuchElementException.class,
+                () -> instancia.gestionarDonacion(
+                        deposito.id(),
+                        "donacion1",
+                        "producto1",
+                        50 // menor a los 100 requeridos
+                )
+        );
+    }
+
+    @Test
+    void testGestionarDonacionRecurrenteAceptaCantidadCompleta() {
+
+        NecesidadMaterialDTO necesidadRecurrente =
+                new NecesidadMaterialDTO(
+                        "necesidad1",
+                        "entidad1",
+                        5,
+                        "Necesita alimentos semanalmente",
+                        100,
+                        "producto1",
+                        TipoNecesidadMaterialEnum.RECURRENTE
+                );
+
+        when(fachadaDonadoresYEntidades
+                .obtenerNecesidadesInsatisfechasDe("producto1"))
+                .thenReturn(List.of(necesidadRecurrente));
+
+        DepositoDTO deposito =
+                instancia.agregarDeposito(depositoEjemplo);
+
+        instancia.setAlgoritmoMM(
+                deposito.id(),
+                TipoAlgoritmoEnum.SUB_ATENDIDOS
+        );
+
+        DepositoDTO resultado =
+                instancia.gestionarDonacion(
+                        deposito.id(),
+                        "donacion1",
+                        "producto1",
+                        100
+                );
+
+        Assertions.assertNotNull(resultado);
+
+        verify(fachadaDonadoresYEntidades, times(1))
+                .obtenerNecesidadesInsatisfechasDe("producto1");
+    }
+
+    @Test
+    void testGestionarDonacionRecurrenteAceptaCantidadMayor() {
+
+        NecesidadMaterialDTO necesidadRecurrente =
+                new NecesidadMaterialDTO(
+                        "necesidad1",
+                        "entidad1",
+                        5,
+                        "Necesita alimentos semanalmente",
+                        100,
+                        "producto1",
+                        TipoNecesidadMaterialEnum.RECURRENTE
+                );
+
+        when(fachadaDonadoresYEntidades
+                .obtenerNecesidadesInsatisfechasDe("producto1"))
+                .thenReturn(List.of(necesidadRecurrente));
+
+        DepositoDTO deposito =
+                instancia.agregarDeposito(depositoEjemplo);
+
+        instancia.setAlgoritmoMM(
+                deposito.id(),
+                TipoAlgoritmoEnum.SUB_ATENDIDOS
+        );
+
+        DepositoDTO resultado =
+                instancia.gestionarDonacion(
+                        deposito.id(),
+                        "donacion1",
+                        "producto1",
+                        150
+                );
+
+        Assertions.assertNotNull(resultado);
+    }
+
+    @Test
+    void testSetAlgoritmoMM() {
+
+        DepositoDTO deposito =
+                instancia.agregarDeposito(
+                        new DepositoDTO(null, null, "Deposito", "Direccion", 100, null)
+                );
+
+        instancia.setAlgoritmoMM(
+                deposito.id(),
+                TipoAlgoritmoEnum.SUB_ATENDIDOS
+        );
+
+        DepositoDTO actualizado =
+                instancia.buscarDepositoPorID(deposito.id());
+
+        Assertions.assertEquals(
+                TipoAlgoritmoEnum.SUB_ATENDIDOS,
+                actualizado.algoritmo()
+        );
+    }
+
+    @Test
+    void testEjecutarMatchmakingSinNecesidades() {
+
+        DepositoDTO deposito = instancia.agregarDeposito(depositoEjemplo);
+
+        instancia.setAlgoritmoMM(
+                deposito.id(),
+                TipoAlgoritmoEnum.SUB_ATENDIDOS
+        );
+
+        Assertions.assertThrows(
+                NoSuchElementException.class,
+                () -> instancia.ejecutarMatchmaking(
+                        deposito.id(),
+                        paqueteEjemplo,
+                        List.of()
+                )
+        );
+    }
+
+    @Test
+    void testAsignacionSeCreaEnEstadoAsignada() {
+
+        DepositoDTO deposito =
+                instancia.agregarDeposito(depositoEjemplo);
+
+        instancia.setAlgoritmoMM(
+                deposito.id(),
+                TipoAlgoritmoEnum.SUB_ATENDIDOS
+        );
+
+        AsignacionDTO asignacion =
+                instancia.ejecutarMatchmaking(
+                        deposito.id(),
+                        paqueteEjemplo,
+                        List.of(necesidadEjemplo)
+                );
+
+        Assertions.assertEquals(
+                EstadoAsginacionEnum.ASIGNADA,
+                asignacion.estado()
+        );
+    }
+
+    @Test
+    void testReportarEntregaSinAsignacion() {
+
+        when(fachadaDonaciones.cambiarEstadoDeDonacion(
+                paqueteEjemplo.donacionID(),
+                EstadoDonacionEnum.ACEPTADA
+        )).thenReturn(null);
+
+        Assertions.assertThrows(
+                NoSuchElementException.class,
+                () -> instancia.reportarEntrega(paqueteEjemplo)
+        );
+
+        verify(fachadaDonaciones, times(1))
+                .cambiarEstadoDeDonacion(
+                        paqueteEjemplo.donacionID(),
+                        EstadoDonacionEnum.ACEPTADA
+                );
+    }
 }
