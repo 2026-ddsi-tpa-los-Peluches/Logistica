@@ -35,7 +35,7 @@ public class InMemoryAsignacionesRepository implements AsignacionesRepository {
 
     @Override
     public Optional<Asignacion> findAsignacionByPaqueteId(String paqueteId) {
-        return asignaciones.stream().filter(a -> a.getPaquete().getPaqueteID().equals(paqueteId)).findFirst();
+        return asignaciones.stream().filter(a -> a.getPaqueteId().equals(paqueteId)).findFirst();
     }
 
 

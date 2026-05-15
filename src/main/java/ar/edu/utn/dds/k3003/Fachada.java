@@ -11,22 +11,27 @@ import ar.edu.utn.dds.k3003.repositories.asignaciones.AsignacionesRepository;
 import ar.edu.utn.dds.k3003.repositories.asignaciones.InMemoryAsignacionesRepository;
 import ar.edu.utn.dds.k3003.repositories.depositos.DepositosRepository;
 import ar.edu.utn.dds.k3003.repositories.depositos.InMemoryDepositosRepository;
+import ar.edu.utn.dds.k3003.repositories.paquetes.InMemoryPaquetesRepository;
+import ar.edu.utn.dds.k3003.repositories.paquetes.PaquetesRepository;
 import lombok.val;
 
 import java.time.LocalDateTime;
 import java.util.*;
+
 
 public class Fachada implements FachadaLogistica {
     private FachadaDonadoresYEntidades fachadaDonadoresYEntidades;
     private FachadaDonaciones fachadaDonaciones;
     private final DepositosRepository depositoRepository;
     private final AsignacionesRepository asignacionRepository;
+    private final PaquetesRepository paquetesRepository;
 
     private final NecesidadService necesidadService;
 
     public Fachada() {
         this.depositoRepository = new InMemoryDepositosRepository();
         this.asignacionRepository = new InMemoryAsignacionesRepository();
+        this.paquetesRepository = new InMemoryPaquetesRepository();
         this.necesidadService = new NecesidadService();
     }
 
@@ -63,6 +68,15 @@ public class Fachada implements FachadaLogistica {
         return toDTO(deposito.get());
     }
 
+    public List<DepositoDTO> obtenerDepositos(){
+        return this.depositoRepository.findAll().stream().map(this::toDTO).toList();
+    }
+
+    public DepositoDTO borrarDepositoPorID(String id){
+        Deposito deposito = this.depositoRepository.deleteById(id);
+        return toDTO(deposito);
+    }
+
     @Override
     public AsignacionDTO buscarAsignacionPorPaqueteID(String paqueteID) throws NoSuchElementException {
 
@@ -72,6 +86,24 @@ public class Fachada implements FachadaLogistica {
             throw new NoSuchElementException("No existe asignación");
         }
         return toDTO(asignacion.get());
+    }
+
+    public AsignacionDTO buscarAsignacionPorID(String id) throws NoSuchElementException {
+
+        val asignacion = asignacionRepository.findById(id);
+        if (asignacion.isEmpty()) {
+            throw new NoSuchElementException("No existe asignación");
+        }
+        return toDTO(asignacion.get());
+    }
+
+    public PaqueteDTO buscarPaquetePorID(String id) throws NoSuchElementException {
+
+        val paquete = paquetesRepository.findById(id);
+        if (paquete.isEmpty()) {
+            throw new NoSuchElementException("No existe asignación");
+        }
+        return toDTO(paquete.get());
     }
 
     @Override
@@ -98,9 +130,8 @@ public class Fachada implements FachadaLogistica {
             throw new NoSuchElementException("No hay necesidades para este producto");
         }
 
+        Paquete paquete = paquetesRepository.save(new Paquete(null, donacionID, productoID, cantidad));
 
-        String paqueteID = UUID.randomUUID().toString();
-        Paquete paquete = new Paquete(paqueteID, donacionID, productoID, cantidad); // no me gusta que paquete tenga donacionId
 
 
         List<NecesidadMaterialDTO> necesidadesAplicables = necesidadesDeProducto.stream().filter(necesidadDeProducto ->
@@ -147,16 +178,16 @@ public class Fachada implements FachadaLogistica {
 
         String asignacionID = UUID.randomUUID().toString();
 
-        if(elegida.getId() == null){
-            elegida.setId("necesidad1");
-        }
+        //if(elegida.getId() == null){
+         //   elegida.setId("necesidad1");
+       // }
 
 
 
 
         Asignacion asignacion = new Asignacion(
                 asignacionID,
-                paquete,
+                paquete.getId(),
                 elegida.getId(),
                 LocalDateTime.now(),
                 EstadoAsginacionEnum.ASIGNADA
@@ -187,7 +218,7 @@ public class Fachada implements FachadaLogistica {
         val asignacion = asignacionOptional.get();
 
         fachadaDonadoresYEntidades.satisfacerNecesidad(
-                asignacion.getNecesidadID(),
+                asignacion.getNecesidadId(),
                 paqueteDTO.cantidad()
         );
 
@@ -222,7 +253,7 @@ public class Fachada implements FachadaLogistica {
 
     private PaqueteDTO toDTO(Paquete paquete) {
         return new PaqueteDTO(
-                paquete.getPaqueteID(),
+                paquete.getId(),
                 paquete.getDonacionID(),
                 paquete.getProductoID(),
                 paquete.getCantidad()
@@ -233,8 +264,8 @@ public class Fachada implements FachadaLogistica {
 
         return new AsignacionDTO(
                 asignacion.getId(),
-                asignacion.getPaquete().getPaqueteID(),
-                asignacion.getNecesidadID(),
+                asignacion.getPaqueteId(),
+                asignacion.getNecesidadId(),
                 asignacion.getFecha(),
                 asignacion.getEstado()
         );
@@ -268,10 +299,10 @@ public class Fachada implements FachadaLogistica {
     }
 
 
-    private Asignacion toDomain(AsignacionDTO dto, Paquete paquete) {
+    private Asignacion toDomain(AsignacionDTO dto) {
         return new Asignacion(
                 dto.id(),
-                paquete,
+                dto.paqueteID(),
                 dto.necesidadID(),
                 dto.fecha(),
                 dto.estado()

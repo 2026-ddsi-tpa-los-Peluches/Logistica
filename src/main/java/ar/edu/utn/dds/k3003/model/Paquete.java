@@ -2,21 +2,21 @@ package ar.edu.utn.dds.k3003.model;
 
 public class Paquete{
 
-    String paqueteID;
+    String id;
     String donacionID;
     String productoID;
     int cantidad;
 
-    public Paquete(String paqueteID, String donacionID,String productoID, int cantidad) {
-        this.paqueteID = paqueteID;
+    public Paquete(String id, String donacionID,String productoID, int cantidad) {
+        this.id = id;
         this.donacionID = donacionID;
         this.productoID = productoID;
         this.cantidad = cantidad;
 
     }
 
-    public String getPaqueteID() {
-        return paqueteID;
+    public String getId() {
+        return id;
     }
 
     public String getDonacionID() {
@@ -31,7 +31,7 @@ public class Paquete{
         return cantidad;
     }
 
-    public void setPaqueteID(String paqueteID){
-        this.paqueteID = paqueteID;
+    public void setId(String id){
+        this.id = id;
     }
 }

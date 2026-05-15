@@ -8,17 +8,17 @@ import java.util.List;
 
 public class Asignacion {
     String id;
-    Paquete paquete;
-    String necesidadID;
+    String paqueteId;
+    String necesidadId;
     LocalDateTime fecha;
     EstadoAsginacionEnum estado;
     private List<HistorialEstadoAsignacion> historialEstadoAsignaciones;
 
 
-    public Asignacion(String id, Paquete paquete, String necesidadID, LocalDateTime fecha, EstadoAsginacionEnum estado) {
+    public Asignacion(String id, String paquete, String necesidadID, LocalDateTime fecha, EstadoAsginacionEnum estado) {
         this.id = id;
-        this.paquete = paquete;
-        this.necesidadID = necesidadID;
+        this.paqueteId = paquete;
+        this.necesidadId = necesidadID;
         this.fecha = fecha;
         this.estado = estado;
         this.historialEstadoAsignaciones = new ArrayList<>();
@@ -32,12 +32,12 @@ public class Asignacion {
         return id;
     }
 
-    public Paquete getPaquete() {
-        return paquete;
+    public String getPaqueteId() {
+        return paqueteId;
     }
 
-    public String getNecesidadID() {
-        return necesidadID;
+    public String getNecesidadId() {
+        return necesidadId;
     }
 
     public LocalDateTime getFecha() {
@@ -58,21 +58,7 @@ public class Asignacion {
         this.id = id;
     }
 
-    public void setEstado(EstadoAsginacionEnum estado) {
-        this.estado = estado;
-    }
 
-    public void setFecha(LocalDateTime fecha) {
-        this.fecha = fecha;
-    }
-
-    public void setNecesidadID(String necesidadID) {
-        this.necesidadID = necesidadID;
-    }
-
-    public void setPaquete(Paquete paquete) {
-        this.paquete = paquete;
-    }
 }
 
 
