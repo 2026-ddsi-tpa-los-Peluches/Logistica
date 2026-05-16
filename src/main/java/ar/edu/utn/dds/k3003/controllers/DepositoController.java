@@ -28,9 +28,15 @@ public class DepositoController {
     @GetMapping
     public ResponseEntity<?> getAllDepositos() {
 
-        return ResponseEntity.ok(
-                fachada.obtenerDepositos()
-        );
+        List<DepositoDTO> depositos = fachada.obtenerDepositos();
+
+        if (depositos.isEmpty()) {
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body("Depositos no encontrados");
+        }
+
+        return ResponseEntity.ok(depositos);
     }
 
     @PostMapping
@@ -79,9 +85,15 @@ public class DepositoController {
     public ResponseEntity<?> deleteDepositoByID(@PathVariable("id") String depositoID) {
         try {
             DepositoDTO depositoDTO = fachada.borrarDepositoPorID(depositoID);
-            return ResponseEntity.noContent().build();
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting deposito: " + ex.getMessage());
+            return ResponseEntity
+                    .noContent()
+                    .build();
+
+        } catch (Exception e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
         }
     }
 
@@ -109,11 +121,6 @@ public class DepositoController {
         } catch (NoSuchElementException e) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
-        } catch (Exception e) {
-
-            return ResponseEntity
-                    .badRequest()
                     .body(e.getMessage());
         }
     }

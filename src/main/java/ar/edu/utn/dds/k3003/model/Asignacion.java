@@ -22,6 +22,13 @@ public class Asignacion {
         this.fecha = fecha;
         this.estado = estado;
         this.historialEstadoAsignaciones = new ArrayList<>();
+
+        this.historialEstadoAsignaciones.add(
+                new HistorialEstadoAsignacion(
+                        estado,
+                        fecha
+                )
+        );
     }
 
 
@@ -34,6 +41,10 @@ public class Asignacion {
 
     public String getPaqueteId() {
         return paqueteId;
+    }
+
+    public List<HistorialEstadoAsignacion> getHistorialEstadoAsignaciones() {
+        return historialEstadoAsignaciones;
     }
 
     public String getNecesidadId() {
@@ -52,13 +63,19 @@ public class Asignacion {
 
     public void completada(){
         this.estado = EstadoAsginacionEnum.COMPLETADA;
+
+        historialEstadoAsignaciones.add(
+                new HistorialEstadoAsignacion(
+                        this.getEstado(),
+                        LocalDateTime.now())
+        );
     }
+
+
 
     public void setId(String id) {
         this.id = id;
     }
-
-
 }
 
 

@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.NoSuchElementException;
+
 @RestController
 @RequestMapping("/entregas")
 public class EntregaController {
@@ -31,10 +33,10 @@ public class EntregaController {
                     .status(HttpStatus.CREATED)
                     .build();
 
-        } catch (Exception e) {
+        } catch (NoSuchElementException e) {
 
             return ResponseEntity
-                    .badRequest()
+                    .status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
         }
     }

@@ -42,10 +42,9 @@ public class Fachada implements FachadaLogistica {
         if (depositoDTO == null || depositoDTO.id() != null) {
             throw new RuntimeException("Deposito inválido");
         }
-        String id = UUID.randomUUID().toString();
 
         Deposito deposito = new Deposito(
-                id,
+                null,
                 null,
                 depositoDTO.nombre(),
                 depositoDTO.direccion(),
@@ -53,9 +52,9 @@ public class Fachada implements FachadaLogistica {
                 new ArrayList<>()
         );
 
-        depositoRepository.save(deposito);
+        Deposito depositoConId = depositoRepository.save(deposito);
 
-        return toDTO(deposito);
+        return toDTO(depositoConId);
     }
 
     @Override
@@ -178,7 +177,6 @@ public class Fachada implements FachadaLogistica {
         AlgoritmoAsignacion algoritmo = AlgoritmoFactory.crear(deposito.tipoAlgoritmo);
         NecesidadLogistica elegida = algoritmo.elegir(necesidadesLogistica, paquete.getCantidad());
 
-        String asignacionID = UUID.randomUUID().toString();
 
         //if(elegida.getId() == null){
          //   elegida.setId("necesidad1");
@@ -188,16 +186,16 @@ public class Fachada implements FachadaLogistica {
 
 
         Asignacion asignacion = new Asignacion(
-                asignacionID,
+                null,
                 paquete.getId(),
                 elegida.getId(),
                 LocalDateTime.now(),
                 EstadoAsginacionEnum.ASIGNADA
         );
 
-        asignacionRepository.save(asignacion);
+        Asignacion asignacionConId = asignacionRepository.save(asignacion);
 
-        return toDTO(asignacion);
+        return toDTO(asignacionConId);
     }
 
     @Override

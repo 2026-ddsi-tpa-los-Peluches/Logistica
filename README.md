@@ -12,9 +12,13 @@
 
 ---
 
+Link al Swagger
+
+    https://app.swaggerhub.com/apis/claro-16c/liamkaroltrepat-entrega2-api/1
+
 🧩 Link al despliegue en Render
 
-
+    https://entrega-2-liamkaroltrepat.onrender.com
 ---
 
 ### ⚠️ Importante
