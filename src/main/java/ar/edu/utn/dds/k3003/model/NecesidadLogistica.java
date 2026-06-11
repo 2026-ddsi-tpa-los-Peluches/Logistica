@@ -1,12 +1,6 @@
 package ar.edu.utn.dds.k3003.model;
 
 
-import ar.edu.utn.dds.k3003.catedra.dtos.logistica.EstadoAsginacionEnum;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
 public class NecesidadLogistica {
     String id;
     String entidadId;

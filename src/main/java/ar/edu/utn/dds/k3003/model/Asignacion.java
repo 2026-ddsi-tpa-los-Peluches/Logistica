@@ -1,6 +1,6 @@
 package ar.edu.utn.dds.k3003.model;
 
-import ar.edu.utn.dds.k3003.catedra.dtos.logistica.EstadoAsginacionEnum;
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.EstadoAsignacionEnum;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -20,7 +20,7 @@ public class Asignacion {
     LocalDateTime fecha;
 
     @Enumerated(EnumType.STRING)
-    EstadoAsginacionEnum estado;
+    EstadoAsignacionEnum estado;
 
     @OneToMany(cascade = CascadeType.ALL)
     private List<HistorialEstadoAsignacion> historialEstadoAsignaciones;
@@ -28,7 +28,7 @@ public class Asignacion {
 
     public Asignacion(){}
 
-    public Asignacion(Integer paquete, String necesidadID, LocalDateTime fecha, EstadoAsginacionEnum estado) {
+    public Asignacion(Integer paquete, String necesidadID, LocalDateTime fecha, EstadoAsignacionEnum estado) {
         this.paqueteId = paquete;
         this.necesidadId = necesidadID;
         this.fecha = fecha;
@@ -67,14 +67,14 @@ public class Asignacion {
         return fecha;
     }
 
-    public EstadoAsginacionEnum getEstado() {
+    public EstadoAsignacionEnum getEstado() {
         return estado;
     }
 
 
 
     public void completada(){
-        this.estado = EstadoAsginacionEnum.COMPLETADA;
+        this.estado = EstadoAsignacionEnum.COMPLETADA;
 
         historialEstadoAsignaciones.add(
                 new HistorialEstadoAsignacion(

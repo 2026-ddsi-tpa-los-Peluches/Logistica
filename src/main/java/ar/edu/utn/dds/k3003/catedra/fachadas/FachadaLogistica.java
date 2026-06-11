@@ -23,8 +23,4 @@ public interface FachadaLogistica {
           Integer depositoID, PaqueteDTO paqueteDTO, List<NecesidadMaterialDTO> necesidades);
 
   void reportarEntrega(PaqueteDTO paqueteDTO);
-
-  void setFachadaDonadoresYEntidades(FachadaDonadoresYEntidades fachadaDonadoresYEntidades);
-
-  void setFachadaDonaciones(FachadaDonaciones fachadaDonaciones);
 }

@@ -3,10 +3,8 @@ package ar.edu.utn.dds.k3003.controllers;
 
 import ar.edu.utn.dds.k3003.Fachada;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.DepositoDTO;
-import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaDonadoresYEntidades;
 import ar.edu.utn.dds.k3003.controllers.requests.DepositoRequest;
 import ar.edu.utn.dds.k3003.controllers.requests.DonacionRequest;
-import lombok.val;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -84,7 +82,7 @@ public class DepositoController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteDepositoByID(@PathVariable("id") Integer depositoID) {
         try {
-            DepositoDTO depositoDTO = fachada.borrarDepositoPorID(depositoID);
+            fachada.borrarDepositoPorID(depositoID);
             return ResponseEntity
                     .noContent()
                     .build();
@@ -97,11 +95,10 @@ public class DepositoController {
         }
     }
 
+
+
     @PostMapping("/{id}/donacion")
-    // Este endpoint depende del módulo Donadores y Entidades.
-    // Para gestionar la donación se necesitan las necesidades insatisfechas
-    // asociadas al producto donado. Como los módulos no están integrados,
-    // actualmente este endpoint requiere mocks/fakes para poder testearse.
+
     public ResponseEntity<?> gestionarDonacion(
             @PathVariable Integer id,
             @RequestBody DonacionRequest donacionRequest
