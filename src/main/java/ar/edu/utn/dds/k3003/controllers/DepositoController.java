@@ -65,7 +65,7 @@ public class DepositoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getDepositoById(@PathVariable String id) {
+    public ResponseEntity<?> getDepositoById(@PathVariable Integer id) {
 
         try {
 
@@ -82,7 +82,7 @@ public class DepositoController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteDepositoByID(@PathVariable("id") String depositoID) {
+    public ResponseEntity<?> deleteDepositoByID(@PathVariable("id") Integer depositoID) {
         try {
             DepositoDTO depositoDTO = fachada.borrarDepositoPorID(depositoID);
             return ResponseEntity
@@ -103,7 +103,7 @@ public class DepositoController {
     // asociadas al producto donado. Como los módulos no están integrados,
     // actualmente este endpoint requiere mocks/fakes para poder testearse.
     public ResponseEntity<?> gestionarDonacion(
-            @PathVariable String id,
+            @PathVariable Integer id,
             @RequestBody DonacionRequest donacionRequest
     ) {
         try {

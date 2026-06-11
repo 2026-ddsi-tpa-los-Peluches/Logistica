@@ -25,7 +25,7 @@ public class AsignacionController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> buscarAsignacion(
-            @PathVariable String id
+            @PathVariable Integer id
     ) {
         try {
             return ResponseEntity.ok(

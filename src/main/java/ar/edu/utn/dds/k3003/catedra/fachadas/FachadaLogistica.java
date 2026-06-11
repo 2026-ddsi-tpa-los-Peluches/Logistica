@@ -9,18 +9,18 @@ public interface FachadaLogistica {
 
   DepositoDTO agregarDeposito(DepositoDTO deposito);
 
-  DepositoDTO buscarDepositoPorID(String depositoID) throws NoSuchElementException;
+  DepositoDTO buscarDepositoPorID(Integer depositoID) throws NoSuchElementException;
 
-  AsignacionDTO buscarAsignacionPorPaqueteID(String paqueteID) throws NoSuchElementException;
+  AsignacionDTO buscarAsignacionPorPaqueteID(Integer paqueteID) throws NoSuchElementException;
 
   DepositoDTO gestionarDonacion(
-      String depositoID, String donacionID, String productoID, Integer cantidad)
+          Integer depositoID, String donacionID, String  productoID, Integer cantidad)
       throws NoSuchElementException;
 
-  void setAlgoritmoMM(String depositoID, TipoAlgoritmoEnum tipoAlgoritmo);
+  void setAlgoritmoMM(Integer depositoID, TipoAlgoritmoEnum tipoAlgoritmo);
 
   AsignacionDTO ejecutarMatchmaking(
-      String depositoID, PaqueteDTO paqueteDTO, List<NecesidadMaterialDTO> necesidades);
+          Integer depositoID, PaqueteDTO paqueteDTO, List<NecesidadMaterialDTO> necesidades);
 
   void reportarEntrega(PaqueteDTO paqueteDTO);
 

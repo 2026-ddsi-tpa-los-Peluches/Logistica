@@ -2,20 +2,30 @@ package ar.edu.utn.dds.k3003.model;
 
 
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
+import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
+
+@Entity
+@Table(name = "depositos")
 public class Deposito {
-    private String id;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
     private String nombre;
     private String direccion;
     private int capacidadMaxima;
     public TipoAlgoritmoEnum tipoAlgoritmo;
+    @OneToMany(cascade = CascadeType.ALL)
     private List<Paquete> stockActual;
 
-    public Deposito(String id, TipoAlgoritmoEnum tipoAlgoritmo ,String nombre, String direccion, int capacidadMaxima, List<Paquete> stockActual) {
-        this.id = id;
+    public Deposito() {}
+
+
+    public Deposito(TipoAlgoritmoEnum tipoAlgoritmo ,String nombre, String direccion, int capacidadMaxima, List<Paquete> stockActual) {
         this.tipoAlgoritmo = tipoAlgoritmo;
         this.nombre = nombre;
         this.direccion = direccion;
@@ -25,7 +35,7 @@ public class Deposito {
 
 
     // getters
-    public String getId() {
+    public Integer getId() {
         return id;
     }
 
@@ -54,7 +64,7 @@ public class Deposito {
         this.tipoAlgoritmo = tipoAlgoritmo;
     }
 
-    public void setId(String id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 }
