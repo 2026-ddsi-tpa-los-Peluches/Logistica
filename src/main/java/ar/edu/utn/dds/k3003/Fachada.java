@@ -10,6 +10,8 @@ import ar.edu.utn.dds.k3003.model.*;
 import ar.edu.utn.dds.k3003.repositories.asignaciones.AsignacionesRepository;
 import ar.edu.utn.dds.k3003.repositories.depositos.DepositosRepository;
 import ar.edu.utn.dds.k3003.repositories.paquetes.PaquetesRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,10 +24,15 @@ import java.util.*;
 public class Fachada implements FachadaLogistica {
     private FachadaDonadoresYEntidades fachadaDonadoresYEntidades;
     private FachadaDonaciones fachadaDonaciones;
-
+    private final Counter DepositosCreadosCounter;
     private final NecesidadService necesidadService;
 
-    public Fachada() {
+
+    @Autowired
+    public Fachada(MeterRegistry meterRegistry) {
+        this.DepositosCreadosCounter = Counter.builder("deposito.creados")
+                .description("Deposito creado")
+                .register(meterRegistry);
         this.necesidadService = new NecesidadService();
     }
 
@@ -51,6 +58,9 @@ public class Fachada implements FachadaLogistica {
                 depositoDTO.capacidadMaxima(),
                 new ArrayList<>()
         );
+
+        // metrica deposito creado
+        this.DepositosCreadosCounter.increment();
 
         Deposito depositoConId = depositoRepo.save(deposito);
 
