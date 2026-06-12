@@ -60,7 +60,7 @@ public class Fachada implements FachadaLogistica {
         }
 
         Deposito deposito = new Deposito(
-                null,
+                depositoDTO.algoritmo(),
                 depositoDTO.nombre(),
                 depositoDTO.direccion(),
                 depositoDTO.capacidadMaxima(),

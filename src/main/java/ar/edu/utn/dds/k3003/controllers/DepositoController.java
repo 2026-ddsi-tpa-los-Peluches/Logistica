@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -42,11 +43,11 @@ public class DepositoController {
         try {
             DepositoDTO depositoDTO = new DepositoDTO(
                     null,
-                    null,
+                    depositoRequest.tipoAlgoritmo(),
                     depositoRequest.nombre(),
                     depositoRequest.direccion(),
                     depositoRequest.capacidadMaxima(),
-                    null
+                    new ArrayList<>()
             );
 
             DepositoDTO creado = fachada.agregarDeposito(depositoDTO);
