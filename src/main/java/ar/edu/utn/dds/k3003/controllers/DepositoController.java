@@ -2,6 +2,7 @@ package ar.edu.utn.dds.k3003.controllers;
 
 
 import ar.edu.utn.dds.k3003.Fachada;
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.AsignacionDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.DepositoDTO;
 import ar.edu.utn.dds.k3003.controllers.requests.DepositoRequest;
 import ar.edu.utn.dds.k3003.controllers.requests.DonacionRequest;
@@ -105,20 +106,26 @@ public class DepositoController {
             @RequestBody DonacionRequest donacionRequest
     ) {
         try {
-            DepositoDTO deposito = fachada.gestionarDonacion(
-                    id,
-                    donacionRequest.donacionID(),
-                    donacionRequest.productoID(),
-                    donacionRequest.cantidad()
-            );
+            AsignacionDTO asignacionDTO =
+                    fachada.gestionarDonacion(
+                        id,
+                        donacionRequest.donacionID(),
+                        donacionRequest.productoID(),
+                        donacionRequest.cantidad()
+                );
 
             return ResponseEntity
                     .status(HttpStatus.CREATED)
-                    .body(deposito);
+                    .body(asignacionDTO);
 
         } catch (NoSuchElementException e) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
                     .body(e.getMessage());
         }
     }

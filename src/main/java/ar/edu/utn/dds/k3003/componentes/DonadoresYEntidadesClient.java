@@ -13,35 +13,52 @@ import java.util.*;
 @Service
 public class DonadoresYEntidadesClient {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final String baseUrl;
 
-    public DonadoresYEntidadesClient(@Value("${DONADORESYENTIDADES_SERVICE_URL:http://localhost:8081}") String baseUrl) {
+    public DonadoresYEntidadesClient(@Value("${url.donadoresYEntidades}")String baseUrl) {
+
+        this.restTemplate = new RestTemplate();
         this.baseUrl = baseUrl;
     }
 
-
-    public List<NecesidadMaterialDTO> obtenerNecesidadesInsatisfechasDe(String productoSolicitadoID){
+    // GET /necesidades/{productoSolicitadoID}
+    public List<NecesidadMaterialDTO> obtenerNecesidadesInsatisfechasDe(
+            String productoSolicitadoID
+    ){
         try {
-            // Armamos la URL exacta como dice el Swagger
+
+
             String url = baseUrl + "/necesidades/" + productoSolicitadoID;
-            NecesidadMaterialDTO[] necesidades = restTemplate.getForObject(url, NecesidadMaterialDTO[].class);
+            NecesidadMaterialDTO[] necesidades =
+                    restTemplate.getForObject(
+                            url,
+                            NecesidadMaterialDTO[].class
+                    );
 
             return necesidades != null
                     ? Arrays.asList(necesidades)
                     : Collections.emptyList();
 
         } catch (Exception e) {
-            throw new RuntimeException("Error al consultar necesidades en DonadoresYEntidades", e);
+            throw new RuntimeException(
+                    "Error al consultar necesidades en DonadoresYEntidades",
+                    e
+            );
         }
     }
     // POST necesidades/{necesidadID}/satisfaccion
-    public NecesidadMaterialDTO satisfacerNecesidad(String necesidadID, Integer cantidad)
-            throws NoSuchElementException {
+
+    public NecesidadMaterialDTO satisfacerNecesidad(
+            String necesidadID,
+            Integer cantidad
+    ) {
+
         try{
             String url = baseUrl + "/necesidades/" + necesidadID + "/satisfaccion";
 
             Map<String, Integer> request = new HashMap<>();
+
             request.put("cantidad", cantidad);
 
             return restTemplate.postForObject(
@@ -51,7 +68,10 @@ public class DonadoresYEntidadesClient {
             );
 
         } catch (Exception e) {
-            throw new RuntimeException("Error al satisfacer necesidad", e);
+            throw new RuntimeException(
+                    "Error al satisfacer necesidad",
+                    e
+            );
         }
     }
 }
