@@ -24,7 +24,7 @@ public class DonadoresYEntidadesClient {
     public List<NecesidadMaterialDTO> obtenerNecesidadesInsatisfechasDe(String productoSolicitadoID){
         try {
             // Armamos la URL exacta como dice el Swagger
-            String url = baseUrl + "/necesidades?productoID=" + productoSolicitadoID;
+            String url = baseUrl + "/necesidades/" + productoSolicitadoID;
             NecesidadMaterialDTO[] necesidades = restTemplate.getForObject(url, NecesidadMaterialDTO[].class);
 
             return necesidades != null
