@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
@@ -38,8 +39,8 @@ public class DonacionesClient {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            HttpEntity<EstadoDonacionEnum> request =
-                    new HttpEntity<>(estado, headers);
+            Map<String, String> body = Map.of("estado", estado.name());
+            HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
 
             return restTemplate.exchange(
                     url,
