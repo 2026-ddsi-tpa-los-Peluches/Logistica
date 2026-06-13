@@ -18,7 +18,10 @@ public class Deposito {
     private String nombre;
     private String direccion;
     private int capacidadMaxima;
-    public TipoAlgoritmoEnum tipoAlgoritmo;
+
+    @Enumerated(EnumType.STRING)
+    private TipoAlgoritmoEnum tipoAlgoritmo;
+
     @OneToMany(cascade = CascadeType.ALL)
     private List<Paquete> stockActual;
 
