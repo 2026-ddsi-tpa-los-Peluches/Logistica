@@ -4,6 +4,8 @@ package ar.edu.utn.dds.k3003.controllers;
 import ar.edu.utn.dds.k3003.Fachada;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.AsignacionDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.DepositoDTO;
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
+import ar.edu.utn.dds.k3003.controllers.requests.CambiarAlgoritmoRequest;
 import ar.edu.utn.dds.k3003.controllers.requests.DepositoRequest;
 import ar.edu.utn.dds.k3003.controllers.requests.DonacionRequest;
 import org.springframework.http.HttpStatus;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @RestController
@@ -126,6 +129,32 @@ public class DepositoController {
 
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/{id}/algoritmo")
+    public ResponseEntity<?> cambiarAlgoritmo(
+            @PathVariable Integer id,
+            @RequestBody CambiarAlgoritmoRequest request
+    ) {
+        try {
+
+            DepositoDTO actualizado =
+                    fachada.cambiarAlgoritmo(id, request.algoritmo());
+
+            return ResponseEntity.ok(actualizado);
+
+        } catch (NoSuchElementException e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity
+                    .badRequest()
                     .body(e.getMessage());
         }
     }

@@ -179,6 +179,23 @@ public class Fachada implements FachadaLogistica {
         );
     }
 
+    public DepositoDTO cambiarAlgoritmo(
+            Integer depositoId,
+            TipoAlgoritmoEnum algoritmo
+    ) {
+
+        Deposito deposito = depositoRepo
+                .findById(depositoId)
+                .orElseThrow(() ->
+                        new NoSuchElementException("Deposito no encontrado"));
+
+        deposito.setTipoAlgoritmo(algoritmo);
+
+        depositoRepo.save(deposito);
+
+        return toDTO(deposito);
+    }
+
     @Override
     public void setAlgoritmoMM(Integer depositoID, TipoAlgoritmoEnum tipoAlgoritmo) {
         Deposito deposito  = depositoRepo.findById(depositoID)
