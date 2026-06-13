@@ -33,13 +33,18 @@ public class DonacionesClient {
             String url = baseUrl + "/donaciones/" + donacionID + "/estado";
 
             HttpEntity<EstadoDonacionEnum> request = new HttpEntity<>(estado);
-
-            return restTemplate.exchange(
+            return restTemplate.patchForObject(
                     url,
-                    HttpMethod.PATCH,
-                    request,
+                    estado,
                     DonacionDTO.class
-            ).getBody();
+
+            );
+//            return restTemplate.exchange(
+//                    url,
+//                    HttpMethod.PATCH,
+//                    request,
+//                    DonacionDTO.class
+//            ).getBody();
 
         } catch (Exception e) {
             throw new RuntimeException(
