@@ -33,12 +33,6 @@ public class DepositoController {
 
         List<DepositoDTO> depositos = fachada.obtenerDepositos();
 
-        if (depositos.isEmpty()) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body("Depositos no encontrados");
-        }
-
         return ResponseEntity.ok(depositos);
     }
 
