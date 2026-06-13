@@ -346,7 +346,9 @@ public class Fachada implements FachadaLogistica {
                   dto.id(),
                   dto.entidadID(),
                   dto.nivelDeUrgencia(),
-                  dto.cantidadObjetivo()
+                  dto.cantidadObjetivo(),
+                  dto.cantidadRecibida()
+
           );
       }
 }

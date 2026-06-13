@@ -2,17 +2,22 @@ package ar.edu.utn.dds.k3003.model;
 
 
 public class NecesidadLogistica {
+
     String id;
     String entidadId;
     Integer urgencia;
     Integer cantidadObjetivo;
+    Integer cantidadRecibida;
 
-    public NecesidadLogistica( String id, String entidadId,  Integer urgencia, Integer cantidadObjetivo){
+    public NecesidadLogistica( String id, String entidadId,  Integer urgencia, Integer cantidadObjetivo, Integer cantidadRecibida){
         this.id = id;
         this.entidadId = entidadId;
         this.urgencia = urgencia;
         this.cantidadObjetivo = cantidadObjetivo;
+        this.cantidadRecibida = cantidadRecibida;
     }
+
+
 
     public String getId() {
         return id;
@@ -44,6 +49,18 @@ public class NecesidadLogistica {
 
     public void setCantidadObjetivo(Integer cantidadObjetivo) {
         this.cantidadObjetivo = cantidadObjetivo;
+    }
+
+    public Integer getCantidadRecibida() {
+        return cantidadRecibida;
+    }
+
+    public void setCantidadRecibida(Integer cantidadRecibida) {
+        this.cantidadRecibida = cantidadRecibida;
+    }
+
+    public Integer getCantidadFaltante() {
+        return cantidadObjetivo - cantidadRecibida;
     }
 }
 
