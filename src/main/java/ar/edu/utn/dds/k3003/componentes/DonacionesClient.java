@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
 @Service
 public class DonacionesClient {
@@ -19,8 +20,8 @@ public class DonacionesClient {
     private final RestTemplate restTemplate;
     private final String baseUrl;
 
-    public DonacionesClient(@Value("${url.donaciones}") String baseUrl) {
-        this.restTemplate = new RestTemplate();
+    public DonacionesClient(@Value("${url.donaciones}") String baseUrl, RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
         this.baseUrl = baseUrl;
     }
 
