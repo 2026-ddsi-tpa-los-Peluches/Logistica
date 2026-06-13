@@ -20,7 +20,7 @@ public class Deposito {
     private int capacidadMaxima;
 
     @Enumerated(EnumType.STRING)
-    private TipoAlgoritmoEnum tipoAlgoritmo;
+    public TipoAlgoritmoEnum tipoAlgoritmo;
 
     @OneToMany(cascade = CascadeType.ALL)
     private List<Paquete> stockActual;
