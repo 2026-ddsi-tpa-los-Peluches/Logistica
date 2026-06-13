@@ -5,7 +5,9 @@ import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.EstadoDonacionEnum;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.InsigniaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.MisionDTO;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,22 +32,21 @@ public class DonacionesClient {
             String donacionID,
             EstadoDonacionEnum estado
     ) {
-        try{
+        try {
             String url = baseUrl + "/donaciones/" + donacionID + "/estado";
 
-            HttpEntity<EstadoDonacionEnum> request = new HttpEntity<>(estado);
-            return restTemplate.patchForObject(
-                    url,
-                    estado,
-                    DonacionDTO.class
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-            );
-//            return restTemplate.exchange(
-//                    url,
-//                    HttpMethod.PATCH,
-//                    request,
-//                    DonacionDTO.class
-//            ).getBody();
+            HttpEntity<EstadoDonacionEnum> request =
+                    new HttpEntity<>(estado, headers);
+
+            return restTemplate.exchange(
+                    url,
+                    HttpMethod.PATCH,
+                    request,
+                    DonacionDTO.class
+            ).getBody();
 
         } catch (Exception e) {
             throw new RuntimeException(
