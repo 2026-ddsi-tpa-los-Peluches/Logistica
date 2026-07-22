@@ -12,12 +12,12 @@ import ar.edu.utn.dds.k3003.repositories.depositos.DepositosRepository;
 import ar.edu.utn.dds.k3003.repositories.paquetes.PaquetesRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+
 
 
 @Service
@@ -72,8 +72,7 @@ public class Fachada implements FachadaLogistica {
                 depositoDTO.algoritmo(),
                 depositoDTO.nombre(),
                 depositoDTO.direccion(),
-                depositoDTO.capacidadMaxima(),
-                new ArrayList<>()
+                depositoDTO.capacidadMaxima()
         );
 
         // metrica deposito creado
@@ -130,53 +129,111 @@ public class Fachada implements FachadaLogistica {
     }
 
     @Override
-    public AsignacionDTO gestionarDonacion(Integer depositoID, String donacionID, String productoID, Integer cantidad)
+    public AsignacionDTO gestionarDonacion(Integer depositoID, String donacionID, String productoID, Integer cantidadDonada)
             throws NoSuchElementException {
 
-        if (cantidad == null || cantidad <= 0) {
+        if (cantidadDonada == null || cantidadDonada <= 0) {
             throw new IllegalArgumentException("Cantidad inválida");
         }
 
+
         Deposito deposito = depositoRepo.findById(depositoID)
-                        .orElseThrow(() -> new NoSuchElementException("Depósito no encontrado: " + depositoID));
+                .orElseThrow(() -> new NoSuchElementException("Depósito no encontrado: " + depositoID));
+
+        if (!deposito.tieneLugar(cantidadDonada)) {
+            throw new IllegalArgumentException("El deposito asignado no tiene lugar suficiente");
+        }
 
         List<NecesidadMaterialDTO> necesidadesDeProducto =
                 donadoresYEntidadesClient.obtenerNecesidadesInsatisfechasDe(productoID);
 
 
-        if (necesidadesDeProducto.isEmpty()) {
-            throw new NoSuchElementException("No hay necesidades para este producto");
-        }
 
-        Paquete paquete = new Paquete(
-                donacionID,
-                productoID,
-                cantidad
-        );
+        if (necesidadesDeProducto.isEmpty()) {
+
+            Paquete paquete = new Paquete(
+                    donacionID,
+                    productoID,
+                    cantidadDonada
+            );
+
+            deposito.agregarPaquete(paquete);
+            depositoRepo.save(deposito);
+
+            return null;
+        }
 
         List<NecesidadMaterialDTO> necesidadesAplicables =
                 necesidadesDeProducto.stream()
                         .filter(n ->
-                                                    this.necesidadService.esNecesidadAplicable(
-                                                            n,
-                                                            paquete.getCantidad()
-                                                    )
+                                this.necesidadService.esNecesidadAplicable(
+                                        n,
+                                        cantidadDonada
+                                )
                         )
                         .toList();
 
-        if(necesidadesAplicables.isEmpty()) {
+        if (necesidadesAplicables.isEmpty()) {
             throw new NoSuchElementException(
                     "No hay necesidades aplicables"
             );
         }
 
-        Paquete paqueteGuardado = paqueteRepo.save(paquete);
 
-        return ejecutarMatchmaking(
-                deposito,
-                paqueteGuardado,
-                necesidadesAplicables
+
+        List<NecesidadLogistica> necesidadesLogistica =
+                necesidadesAplicables.stream()
+                        .map(this::toDomain)
+                        .toList();
+
+        NecesidadLogistica elegida =
+                ejecutarMatchmaking(
+                    deposito,
+                        cantidadDonada,
+                    necesidadesLogistica
+                );
+
+
+        int cantidadNecesitada = elegida.getCantidadFaltante();
+
+        int cantidadAAsignar = cuantoAsignar(cantidadNecesitada, cantidadDonada);
+
+        Paquete paqueAsignado = new Paquete(
+                donacionID,
+                productoID,
+                cantidadAAsignar
         );
+
+        Paquete paqueAsignadoyGuardado = paqueteRepo.save(paqueAsignado);
+
+
+        Asignacion asignacion = new Asignacion(
+                paqueAsignadoyGuardado.getId(),
+                elegida.getId(),
+                LocalDateTime.now(),
+                EstadoAsignacionEnum.ASIGNADA
+        );
+
+        Asignacion asignacionConId =
+                asignacionRepo.save(asignacion);
+
+        int cantidadSobrante = cantidadDonada - cantidadAAsignar;
+        if(cantidadSobrante > 0){
+            Paquete paqueStock = new Paquete(
+                    donacionID,
+                    productoID,
+                    cantidadSobrante
+            );
+
+            deposito.agregarPaquete(paqueStock);
+            depositoRepo.save(deposito);
+        }
+
+        return toDTO(asignacionConId);
+    }
+
+    public int cuantoAsignar(int cantidadNecesitada, int cantidadDonada) {
+        return Math.min(cantidadNecesitada, cantidadDonada);
     }
 
     public DepositoDTO cambiarAlgoritmo(
@@ -205,27 +262,20 @@ public class Fachada implements FachadaLogistica {
         depositoRepo.save(deposito);
     }
 
-    private AsignacionDTO ejecutarMatchmaking(
+    private NecesidadLogistica ejecutarMatchmaking(
             Deposito deposito,
-            Paquete paquete,
-            List<NecesidadMaterialDTO> necesidades) {
+            int cantidadDonada,
+            List<NecesidadLogistica> necesidadesLogistica) {
 
 
-        if (paquete == null) {
-            throw new IllegalArgumentException("Paquete nulo");
+        if (cantidadDonada < 0) {
+            throw new IllegalArgumentException("no dona nada y hasta roba");
         }
 
-        if (necesidades == null || necesidades.isEmpty()) {
+        if (necesidadesLogistica == null || necesidadesLogistica.isEmpty()) {
             throw new NoSuchElementException("No hay necesidades");
         }
 
-
-
-
-        List<NecesidadLogistica> necesidadesLogistica =
-                necesidades.stream()
-                        .map(this::toDomain)
-                        .toList();
 
         AlgoritmoAsignacion algoritmo =
                 AlgoritmoFactory.crear(deposito.tipoAlgoritmo);
@@ -233,26 +283,16 @@ public class Fachada implements FachadaLogistica {
 
         NecesidadLogistica elegida = algoritmo.elegir(
                 necesidadesLogistica,
-                paquete.getCantidad()
+                cantidadDonada
         );
 
-        if(elegida == null) {
+        if (elegida == null) {
             throw new NoSuchElementException(
                     "No se pudo asignar necesidad"
             );
         }
+            return elegida;
 
-        Asignacion asignacion = new Asignacion(
-                paquete.getId(),
-                elegida.getId(),
-                LocalDateTime.now(),
-                EstadoAsignacionEnum.ASIGNADA
-        );
-
-        Asignacion asignacionConId =
-                asignacionRepo.save(asignacion);
-
-        return toDTO(asignacionConId);
     }
 
     @Override
@@ -332,10 +372,7 @@ public class Fachada implements FachadaLogistica {
                 dto.algoritmo(),
                 dto.nombre(),
                 dto.direccion(),
-                dto.capacidadMaxima(),
-                dto.stockActual() == null
-                        ? new ArrayList<>()
-                        : dto.stockActual().stream().map(this::toDomain).toList()
+                dto.capacidadMaxima()
         );
     }
 

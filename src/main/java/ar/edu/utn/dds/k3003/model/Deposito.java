@@ -18,6 +18,7 @@ public class Deposito {
     private String nombre;
     private String direccion;
     private int capacidadMaxima;
+    private int capacidadRestante;
 
     @Enumerated(EnumType.STRING)
     public TipoAlgoritmoEnum tipoAlgoritmo;
@@ -28,12 +29,13 @@ public class Deposito {
     public Deposito() {}
 
 
-    public Deposito(TipoAlgoritmoEnum tipoAlgoritmo ,String nombre, String direccion, int capacidadMaxima, List<Paquete> stockActual) {
+    public Deposito(TipoAlgoritmoEnum tipoAlgoritmo ,String nombre, String direccion, int capacidadMaxima) {
         this.tipoAlgoritmo = tipoAlgoritmo;
         this.nombre = nombre;
         this.direccion = direccion;
         this.capacidadMaxima = capacidadMaxima;
-        this.stockActual = stockActual;
+        this.stockActual = new ArrayList<>();;
+        this.capacidadRestante = capacidadMaxima;
     }
 
 
@@ -69,5 +71,38 @@ public class Deposito {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public int getCapacidadRestante() {return capacidadRestante;}
+
+    public void agregarPaquete(Paquete paqueteNuevo) {
+        if (paqueteNuevo == null) {
+            throw new IllegalArgumentException("El paquete no puede ser nulo.");
+        }
+
+        if (!tieneLugar(paqueteNuevo.getCantidad())) {
+            throw new IllegalStateException("Capacidad insuficiente en el depósito.");
+        }
+
+       //Buscar si ya hay un paquete en la lista con el mismo productoID
+        Paquete paqueteExistente = stockActual.stream()
+                .filter(p -> p.getProductoID() != null && p.getProductoID().equals(paqueteNuevo.getProductoID()))
+                .findFirst()
+                .orElse(null);
+
+        if (paqueteExistente != null) {
+            // Si existe, le sumamos la cantidad al paquete existente
+            paqueteExistente.sumarCantidad(paqueteNuevo.getCantidad());
+        } else {
+            // Si no existe, agregamos el nuevo paquete a la lista
+            this.stockActual.add(paqueteNuevo);
+        }
+
+        // 3. Descontamos la capacidad restante
+        this.capacidadRestante -= paqueteNuevo.getCantidad();
+    }
+
+    public Boolean tieneLugar(int cantidadDonada){
+        return cantidadDonada < capacidadRestante;
     }
 }

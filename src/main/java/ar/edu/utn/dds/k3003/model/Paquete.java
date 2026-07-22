@@ -43,4 +43,8 @@ public class Paquete{
     public void setId(Integer id){
         this.id = id;
     }
+
+    public void sumarCantidad(int cantidadExtra) {
+        this.cantidad += cantidadExtra;
+    }
 }

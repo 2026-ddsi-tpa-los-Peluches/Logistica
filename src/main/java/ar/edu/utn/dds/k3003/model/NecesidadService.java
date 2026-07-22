@@ -7,8 +7,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class NecesidadService {
 
-    public boolean esNecesidadAplicable(NecesidadMaterialDTO necesidad, Integer cantidadADonar) {
+    public boolean esNecesidadAplicable(NecesidadMaterialDTO necesidad, Integer cantidadDonada) {
         if(necesidad.tipo() == TipoNecesidadMaterialEnum.EXTRAORDINARIA) return true;
-        return necesidad.cantidadObjetivo() <= cantidadADonar;
+        else if (necesidad.tipo() == TipoNecesidadMaterialEnum.RECURRENTE) {
+            //si lo que necesito es menos o a lo sumo igual de lo que me donaron
+            return (necesidad.cantidadObjetivo() - necesidad.cantidadRecibida()) <= cantidadDonada;
+            //capaz estaria bueno que desde donadores y entidades se haga esta logica de
+            // cantidad no cubierta o actual - cantidad faltante
+        }
+        return true;
+
     }
 }
