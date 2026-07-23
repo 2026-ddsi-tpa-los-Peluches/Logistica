@@ -2,6 +2,7 @@ package ar.edu.utn.dds.k3003.controllers;
 
 
 import ar.edu.utn.dds.k3003.Fachada;
+import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.AsignacionDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.DepositoDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
@@ -75,7 +76,7 @@ public class DepositoController {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
-            }
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -95,7 +96,6 @@ public class DepositoController {
     }
 
 
-
     @PostMapping("/{id}/donacion")
 
     public ResponseEntity<?> gestionarDonacion(
@@ -105,11 +105,11 @@ public class DepositoController {
         try {
             AsignacionDTO asignacionDTO =
                     fachada.gestionarDonacion(
-                        id,
-                        donacionRequest.donacionID(),
-                        donacionRequest.productoID(),
-                        donacionRequest.cantidad()
-                );
+                            id,
+                            donacionRequest.donacionID(),
+                            donacionRequest.productoID(),
+                            donacionRequest.cantidad()
+                    );
 
             return ResponseEntity
                     .status(HttpStatus.CREATED)
@@ -152,4 +152,7 @@ public class DepositoController {
                     .body(e.getMessage());
         }
     }
+
+
+
 }

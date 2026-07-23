@@ -12,6 +12,7 @@ import ar.edu.utn.dds.k3003.repositories.depositos.DepositosRepository;
 import ar.edu.utn.dds.k3003.repositories.paquetes.PaquetesRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -207,17 +208,67 @@ public class Fachada implements FachadaLogistica {
         Paquete paqueAsignadoyGuardado = paqueteRepo.save(paqueAsignado);
 
 
-        Asignacion asignacion = new Asignacion(
-                paqueAsignadoyGuardado.getId(),
+
+
+        return AsignarPaquete(
+                paqueAsignado,
+                deposito,
                 elegida.getId(),
+                cantidadDonada,
+                cantidadAAsignar,
+                donacionID,
+                productoID
+                );
+    }
+
+    private OpcionStock buscarMejorOpcionStock(String productoID, int cantidadSolicitada) {
+        List<Deposito> depositos = depositoRepo.findAll();
+        List<OpcionStock> candidatos = new ArrayList<>();
+
+        // Recorremos los depósitos buscando paquetes del producto solicitado
+        for (Deposito deposito : depositos) {
+            for (Paquete paquete : deposito.getStockActual()) {
+                if (productoID.equals(paquete.getProductoID())) {
+                    candidatos.add(new OpcionStock(deposito, paquete));
+                }
+            }
+        }
+
+        if (candidatos.isEmpty()) {
+            throw new NoSuchElementException("No hay stock disponible para el producto: " + productoID);
+        }
+
+        // Elegimos el paquete más cercano a la cantidad necesitada
+
+        return candidatos.stream()
+                .min(Comparator.comparingInt(opcion ->
+                        Math.abs(opcion.paquete().getCantidad() - cantidadSolicitada)))
+                .orElseThrow();
+    }
+
+    AsignacionDTO AsignarPaquete(
+            Paquete paquete,
+            Deposito deposito,
+            String necesidadID,
+            int cantidadTotal,
+            int cantidadAAsignar,
+            String donacionID,
+            String productoID
+    ){
+
+        Paquete paqueteGuardado = (paquete.getId() == null) ? paqueteRepo.save(paquete) : paquete;
+
+        Asignacion asignacion = new Asignacion(
+                paqueteGuardado.getId(),
+                necesidadID,
                 LocalDateTime.now(),
-                EstadoAsignacionEnum.ASIGNADA
+                EstadoAsignacionEnum.ASIGNADA,
+                AsgnacionRealizadaPor.ALGORITMO_MATCHMAKING
         );
 
-        Asignacion asignacionConId =
-                asignacionRepo.save(asignacion);
+        Asignacion asignacionConId = asignacionRepo.save(asignacion);
 
-        int cantidadSobrante = cantidadDonada - cantidadAAsignar;
+        int cantidadSobrante = cantidadTotal - cantidadAAsignar;
         if(cantidadSobrante > 0){
             Paquete paqueStock = new Paquete(
                     donacionID,
@@ -228,9 +279,52 @@ public class Fachada implements FachadaLogistica {
             deposito.agregarPaquete(paqueStock);
             depositoRepo.save(deposito);
         }
-
         return toDTO(asignacionConId);
     }
+    @Transactional
+    public int asignarProductoAEntidad(NecesidadMaterialDTO necesidad) {
+        String productoID = necesidad.productoSolicitadoID();
+        int cantidadNecesitada = necesidad.cantidadObjetivo() - necesidad.cantidadRecibida();
+
+        // Buscar el paquete más conveniente en el stock de todos los depósitos
+        OpcionStock mejorOpcion = buscarMejorOpcionStock(productoID, cantidadNecesitada);
+
+        Deposito depositoElegido = mejorOpcion.deposito();
+        Paquete paqueteElegido = mejorOpcion.paquete();
+
+
+        int cantidadAAsignar = cuantoAsignar(cantidadNecesitada, paqueteElegido.getCantidad());
+
+
+
+        Asignacion asignacion = new Asignacion(
+                paqueteElegido.getId(),
+                necesidad.id(),
+                LocalDateTime.now(),
+                EstadoAsignacionEnum.ASIGNADA,
+                AsgnacionRealizadaPor.SOLICITUD_EXTERNA
+
+        );
+        asignacionRepo.save(asignacion);
+
+
+        if (paqueteElegido.getCantidad() == cantidadAAsignar) {
+            depositoElegido.removerPaquete(paqueteElegido);
+            paqueteRepo.delete(paqueteElegido);
+        } else {
+            // Si sobró algo en ese paquete, descontamos la cantidad consumida
+            paqueteElegido.restarCantidad(cantidadAAsignar);
+        }
+
+
+        depositoElegido.setCapacidadRestante(depositoElegido.getCapacidadRestante() + cantidadAAsignar);
+        depositoRepo.save(depositoElegido);
+
+        return cantidadAAsignar;
+    }
+
+
+
 
     public int cuantoAsignar(int cantidadNecesitada, int cantidadDonada) {
         return Math.min(cantidadNecesitada, cantidadDonada);
@@ -385,14 +479,14 @@ public class Fachada implements FachadaLogistica {
     }
 
 
-    private Asignacion toDomain(AsignacionDTO dto) {
-        return new Asignacion(
-                dto.paqueteID(),
-                dto.necesidadID(),
-                dto.fecha(),
-                dto.estado()
-        );
-    }
+//    private Asignacion toDomain(AsignacionDTO dto) {
+//        return new Asignacion(
+//                dto.paqueteID(),
+//                dto.necesidadID(),
+//                dto.fecha(),
+//                dto.estado()
+//        );
+//    }
 
 
      private NecesidadLogistica toDomain(NecesidadMaterialDTO dto){

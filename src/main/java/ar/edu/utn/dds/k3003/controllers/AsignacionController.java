@@ -1,12 +1,11 @@
 package ar.edu.utn.dds.k3003.controllers;
 
 import ar.edu.utn.dds.k3003.Fachada;
+import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.DepositoDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.NoSuchElementException;
 
@@ -37,6 +36,31 @@ public class AsignacionController {
                     .status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
         }
+    }
+
+    @PostMapping
+    public ResponseEntity<?> AsignarProductoAEntidad(
+            @RequestBody NecesidadMaterialDTO request
+    ) {
+        try {
+
+            Integer cantidadAsignada = fachada.asignarProductoAEntidad(request);
+
+            return ResponseEntity.ok(cantidadAsignada);
+
+        } catch (NoSuchElementException e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
+        }
+
     }
 }
 

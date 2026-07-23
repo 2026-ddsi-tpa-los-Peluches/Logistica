@@ -20,6 +20,9 @@ public class Asignacion {
     LocalDateTime fecha;
 
     @Enumerated(EnumType.STRING)
+    AsgnacionRealizadaPor formaDeAsignacion;
+
+    @Enumerated(EnumType.STRING)
     EstadoAsignacionEnum estado;
 
     @OneToMany(cascade = CascadeType.ALL)
@@ -28,7 +31,7 @@ public class Asignacion {
 
     public Asignacion(){}
 
-    public Asignacion(Integer paquete, String necesidadID, LocalDateTime fecha, EstadoAsignacionEnum estado) {
+    public Asignacion(Integer paquete, String necesidadID, LocalDateTime fecha, EstadoAsignacionEnum estado, AsgnacionRealizadaPor formaDeAsignacion) {
         this.paqueteId = paquete;
         this.necesidadId = necesidadID;
         this.fecha = fecha;
@@ -41,11 +44,14 @@ public class Asignacion {
                         fecha
                 )
         );
+        this.formaDeAsignacion = formaDeAsignacion;
     }
 
 
     //getters
 
+
+    public AsgnacionRealizadaPor getFormaDeAsignacion() {return formaDeAsignacion;}
 
     public Integer getId() {
         return id;

@@ -47,4 +47,8 @@ public class Paquete{
     public void sumarCantidad(int cantidadExtra) {
         this.cantidad += cantidadExtra;
     }
+
+    public void restarCantidad(int cantidadExtra) {
+        this.cantidad -= cantidadExtra;
+    }
 }

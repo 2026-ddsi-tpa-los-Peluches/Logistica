@@ -61,6 +61,10 @@ public class Deposito {
         return new ArrayList<>(stockActual);
     }
 
+    public void removerPaquete(Paquete paquete) {
+        this.stockActual.remove(paquete);
+    }
+
     public TipoAlgoritmoEnum getTipoAlgoritmo() {
         return tipoAlgoritmo;
     }
@@ -74,6 +78,10 @@ public class Deposito {
     }
 
     public int getCapacidadRestante() {return capacidadRestante;}
+
+    public void setCapacidadRestante(int capacidadRestante) {
+        this.capacidadRestante = capacidadRestante;
+    }
 
     public void agregarPaquete(Paquete paqueteNuevo) {
         if (paqueteNuevo == null) {
