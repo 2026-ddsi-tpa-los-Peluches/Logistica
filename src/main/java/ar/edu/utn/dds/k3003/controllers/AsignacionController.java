@@ -2,11 +2,13 @@ package ar.edu.utn.dds.k3003.controllers;
 
 import ar.edu.utn.dds.k3003.Fachada;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.AsignacionDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.DepositoDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @RestController
@@ -20,6 +22,19 @@ public class AsignacionController {
 
     public AsignacionController(Fachada fachada) {
         this.fachada = fachada;
+    }
+
+    // GET /asignaciones -> Devuelve todas las asignaciones
+    @GetMapping
+    public ResponseEntity<List<AsignacionDTO>> getAllAsignaciones() {
+        try {
+            List<AsignacionDTO> asignaciones = fachada.obtenerAsignaciones();
+            return ResponseEntity.ok(asignaciones);
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+        }
     }
 
     @GetMapping("/{id}")

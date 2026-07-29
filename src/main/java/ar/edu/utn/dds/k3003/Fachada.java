@@ -106,6 +106,14 @@ public class Fachada implements FachadaLogistica {
         return this.depositoRepo.findAll().stream().map(this::toDTO).toList();
     }
 
+    public List<AsignacionDTO> obtenerAsignaciones(){
+        return this.asignacionRepo.findAll().stream().map(this::toDTO).toList();
+    }
+
+    public List<PaqueteDTO> obtenerPaquetes(){
+        return this.paqueteRepo.findAll().stream().map(this::toDTO).toList();
+    }
+
     public void borrarDepositoPorID(Integer id) {
         Deposito deposito = depositoRepo.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Depósito no encontrado: " + id));
