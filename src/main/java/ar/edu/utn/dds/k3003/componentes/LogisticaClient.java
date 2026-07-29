@@ -19,7 +19,7 @@ public class LogisticaClient {
     private final RestTemplate restTemplate = new RestTemplate();
     private final String baseUrl;
 
-    public LogisticaClient(@Value("${LOGISTICA_SERVICE_URL}") String baseUrl) {
+    public LogisticaClient(@Value("https://logistica-tk85.onrender.com") String baseUrl) {
 
         System.out.println("LOGISTICA URL = " + baseUrl);
 
