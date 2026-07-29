@@ -1,5 +1,6 @@
 package ar.edu.utn.dds.k3003;
 
+import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionMensajeDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.EstadoDonacionEnum;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.*;
@@ -10,12 +11,21 @@ import ar.edu.utn.dds.k3003.model.*;
 import ar.edu.utn.dds.k3003.repositories.asignaciones.AsignacionesRepository;
 import ar.edu.utn.dds.k3003.repositories.depositos.DepositosRepository;
 import ar.edu.utn.dds.k3003.repositories.paquetes.PaquetesRepository;
+import ar.edu.utn.dds.k3003.worker.model.AlgoritmoAsignacion;
+import ar.edu.utn.dds.k3003.worker.model.AlgoritmoFactory;
+import ar.edu.utn.dds.k3003.worker.model.NecesidadLogistica;
+import ar.edu.utn.dds.k3003.worker.model.NecesidadService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -129,8 +139,92 @@ public class Fachada implements FachadaLogistica {
         return toDTO(paquete);
     }
 
+
     @Override
     public AsignacionDTO gestionarDonacion(Integer depositoID, String donacionID, String productoID, Integer cantidadDonada)
+            throws NoSuchElementException {
+
+        // 1. Validaciones b谩sicas
+        if (cantidadDonada == null || cantidadDonada <= 0) {
+            throw new IllegalArgumentException("Cantidad inv谩lida");
+        }
+
+        Deposito deposito = depositoRepo.findById(depositoID)
+                .orElseThrow(() -> new NoSuchElementException("Dep贸sito no encontrado: " + depositoID));
+
+        // 2. Verificar lugar en el dep贸sito (REQUISITO PARTE B)
+        if (!deposito.tieneLugar(cantidadDonada)) {
+            throw new IllegalArgumentException("El dep贸sito asignado no tiene lugar suficiente");
+        }
+
+        // 3. Crear el Payload (JSON) con los datos recibidos
+        DonacionMensajeDTO payload = new DonacionMensajeDTO(
+                donacionID,
+                depositoID,
+                cantidadDonada,
+                deposito.tipoAlgoritmo,
+                productoID
+        );
+
+
+        // 4. Publicar el mensaje en la cola de CloudAMQP
+        publicarMensajeEnCola(payload);
+
+        // Retornas null o una respuesta indicando que la donaci贸n ingres贸 a la cola de procesamiento
+        return null;
+    }
+
+    // Metodo auxiliar para publicar en RabbitMQ
+    private void publicarMensajeEnCola(DonacionMensajeDTO donacionDTO) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonPayload = objectMapper.writeValueAsString(donacionDTO);
+
+            Map<String, String> env = System.getenv();
+            ConnectionFactory factory = new ConnectionFactory();
+            factory.setHost(env.get("QUEUE_HOST"));
+            factory.setUsername(env.get("QUEUE_USERNAME"));
+            factory.setPassword(env.get("QUEUE_PASSWORD"));
+            factory.setVirtualHost(env.get("QUEUE_USERNAME"));
+
+            String queueName = env.getOrDefault("QUEUE_NAME", "cola_donaciones");
+
+            try (Connection connection = factory.newConnection();
+                 Channel channel = connection.createChannel()) {
+
+                // Asegura que la cola exista antes de publicar
+                channel.queueDeclare(queueName, false, false, false, null);
+
+                // Publica el mensaje en la cola
+                channel.basicPublish("", queueName, null, jsonPayload.getBytes(StandardCharsets.UTF_8));
+                System.out.println("馃摛 Donaci贸n enviada a la cola: " + jsonPayload);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error al publicar mensaje en RabbitMQ", e);
+        }
+    }
+
+
+    public void guardarEnStock(Integer depositoID, String donacionID, String productoID, Integer cantidadDonada){
+        Deposito deposito = depositoRepo.findById(depositoID)
+                .orElseThrow(() -> new NoSuchElementException("Depósito no encontrado: " + depositoID));
+
+        if (!deposito.tieneLugar(cantidadDonada)) {
+            throw new IllegalArgumentException("El deposito asignado no tiene lugar suficiente");
+        }
+
+        Paquete paquete = new Paquete(
+                donacionID,
+                productoID,
+                cantidadDonada
+        );
+
+        deposito.agregarPaquete(paquete);
+        depositoRepo.save(deposito);
+    }
+
+
+    public AsignacionDTO gestiowerwernarDonacion(Integer depositoID, String donacionID, String productoID, Integer cantidadDonada)
             throws NoSuchElementException {
 
         if (cantidadDonada == null || cantidadDonada <= 0) {

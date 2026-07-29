@@ -1,7 +1,7 @@
-package ar.edu.utn.dds.k3003.model.alogoritmos;
+package ar.edu.utn.dds.k3003.worker.model.alogoritmos;
 
-import ar.edu.utn.dds.k3003.model.AlgoritmoAsignacion;
-import ar.edu.utn.dds.k3003.model.NecesidadLogistica;
+import ar.edu.utn.dds.k3003.worker.model.AlgoritmoAsignacion;
+import ar.edu.utn.dds.k3003.worker.model.NecesidadLogistica;
 
 import java.util.Comparator;
 import java.util.List;
