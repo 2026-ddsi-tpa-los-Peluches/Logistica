@@ -1,4 +1,4 @@
-Package ar.edu.utn.dds.k3003;
+package ar.edu.utn.dds.k3003;
 
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionMensajeDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.EstadoDonacionEnum;
@@ -45,8 +45,6 @@ public class Fachada implements FachadaLogistica {
     private final Counter asignacionesSolicitudExternaCounter;   // Métrica 3 (Tag: solicitud_externa)
     private final DistributionSummary tamanioAsignacionSummary; // Métrica 4
 
-    // VERIF
-    private final NecesidadService necesidadService;
 
     // REPOS
     private final DepositosRepository depositoRepo;
@@ -56,7 +54,6 @@ public class Fachada implements FachadaLogistica {
     @Autowired
     public Fachada(
             MeterRegistry meterRegistry,
-            NecesidadService necesidadService,
             DonadoresYEntidadesClient donadoresYEntidadesClient,
             DonacionesClient donacionesClient,
             DepositosRepository depositoRepo,
@@ -95,7 +92,6 @@ public class Fachada implements FachadaLogistica {
                 .baseUnit("unidades")
                 .register(meterRegistry);
 
-        this.necesidadService = necesidadService;
         this.donadoresYEntidadesClient = donadoresYEntidadesClient;
         this.donacionesClient = donacionesClient;
 
@@ -250,92 +246,92 @@ public class Fachada implements FachadaLogistica {
         this.paquetesCreadosCounter.increment();
     }
 
-    public AsignacionDTO gestiowerwernarDonacion(Integer depositoID, String donacionID, String productoID, Integer cantidadDonada)
-            throws NoSuchElementException {
-
-        if (cantidadDonada == null || cantidadDonada <= 0) {
-            throw new IllegalArgumentException("Cantidad inválida");
-        }
-
-        Deposito deposito = depositoRepo.findById(depositoID)
-                .orElseThrow(() -> new NoSuchElementException("Depósito no encontrado: " + depositoID));
-
-        if (!deposito.tieneLugar(cantidadDonada)) {
-            throw new IllegalArgumentException("El deposito asignado no tiene lugar suficiente");
-        }
-
-        List<NecesidadMaterialDTO> necesidadesDeProducto =
-                donadoresYEntidadesClient.obtenerNecesidadesInsatisfechasDe(productoID);
-
-        if (necesidadesDeProducto.isEmpty()) {
-
-            Paquete paquete = new Paquete(
-                    donacionID,
-                    productoID,
-                    cantidadDonada
-            );
-
-            deposito.agregarPaquete(paquete);
-            depositoRepo.save(deposito);
-
-            // --- REGISTRO DE MÉTRICA 1 ---
-            this.paquetesCreadosCounter.increment();
-
-            return null;
-        }
-
-        List<NecesidadMaterialDTO> necesidadesAplicables =
-                necesidadesDeProducto.stream()
-                        .filter(n ->
-                                this.necesidadService.esNecesidadAplicable(
-                                        n,
-                                        cantidadDonada
-                                )
-                        )
-                        .toList();
-
-        if (necesidadesAplicables.isEmpty()) {
-            throw new NoSuchElementException(
-                    "No hay necesidades aplicables"
-            );
-        }
-
-        List<NecesidadLogistica> necesidadesLogistica =
-                necesidadesAplicables.stream()
-                        .map(this::toDomain)
-                        .toList();
-
-        NecesidadLogistica elegida =
-                ejecutarMatchmaking(
-                    deposito,
-                    cantidadDonada,
-                    necesidadesLogistica
-                );
-
-        int cantidadNecesitada = elegida.getCantidadFaltante();
-        int cantidadAAsignar = cuantoAsignar(cantidadNecesitada, cantidadDonada);
-
-        Paquete paqueAsignado = new Paquete(
-                donacionID,
-                productoID,
-                cantidadAAsignar
-        );
-
-        Paquete paqueAsignadoyGuardado = paqueteRepo.save(paqueAsignado);
-        
-        // --- REGISTRO DE MÉTRICA 1 ---
-        this.paquetesCreadosCounter.increment();
-
-        return AsignarPaquete(
-                paqueAsignado,
-                deposito,
-                elegida.getId(),
-                cantidadDonada,
-                cantidadAAsignar,
-                donacionID,
-                productoID
-                );
-    }
+//    public AsignacionDTO gestiowerwernarDonacion(Integer depositoID, String donacionID, String productoID, Integer cantidadDonada)
+//            throws NoSuchElementException {
+//
+//        if (cantidadDonada == null || cantidadDonada <= 0) {
+//            throw new IllegalArgumentException("Cantidad inválida");
+//        }
+//
+//        Deposito deposito = depositoRepo.findById(depositoID)
+//                .orElseThrow(() -> new NoSuchElementException("Depósito no encontrado: " + depositoID));
+//
+//        if (!deposito.tieneLugar(cantidadDonada)) {
+//            throw new IllegalArgumentException("El deposito asignado no tiene lugar suficiente");
+//        }
+//
+//        List<NecesidadMaterialDTO> necesidadesDeProducto =
+//                donadoresYEntidadesClient.obtenerNecesidadesInsatisfechasDe(productoID);
+//
+//        if (necesidadesDeProducto.isEmpty()) {
+//
+//            Paquete paquete = new Paquete(
+//                    donacionID,
+//                    productoID,
+//                    cantidadDonada
+//            );
+//
+//            deposito.agregarPaquete(paquete);
+//            depositoRepo.save(deposito);
+//
+//            // --- REGISTRO DE MÉTRICA 1 ---
+//            this.paquetesCreadosCounter.increment();
+//
+//            return null;
+//        }
+//
+//        List<NecesidadMaterialDTO> necesidadesAplicables =
+//                necesidadesDeProducto.stream()
+//                        .filter(n ->
+//                                this.necesidadService.esNecesidadAplicable(
+//                                        n,
+//                                        cantidadDonada
+//                                )
+//                        )
+//                        .toList();
+//
+//        if (necesidadesAplicables.isEmpty()) {
+//            throw new NoSuchElementException(
+//                    "No hay necesidades aplicables"
+//            );
+//        }
+//
+//        List<NecesidadLogistica> necesidadesLogistica =
+//                necesidadesAplicables.stream()
+//                        .map(this::toDomain)
+//                        .toList();
+//
+//        NecesidadLogistica elegida =
+//                ejecutarMatchmaking(
+//                    deposito,
+//                    cantidadDonada,
+//                    necesidadesLogistica
+//                );
+//
+//        int cantidadNecesitada = elegida.getCantidadFaltante();
+//        int cantidadAAsignar = cuantoAsignar(cantidadNecesitada, cantidadDonada);
+//
+//        Paquete paqueAsignado = new Paquete(
+//                donacionID,
+//                productoID,
+//                cantidadAAsignar
+//        );
+//
+//        Paquete paqueAsignadoyGuardado = paqueteRepo.save(paqueAsignado);
+//
+//        // --- REGISTRO DE MÉTRICA 1 ---
+//        this.paquetesCreadosCounter.increment();
+//
+//        return AsignarPaquete(
+//                paqueAsignado,
+//                deposito,
+//                elegida.getId(),
+//                cantidadDonada,
+//                cantidadAAsignar,
+//                donacionID,
+//                productoID
+//                );
+//    }
 
     private OpcionStock buscarMejorOpcionStock(String productoID, int cantidadSolicitada) {
         List<Deposito> depositos = depositoRepo.findAll();

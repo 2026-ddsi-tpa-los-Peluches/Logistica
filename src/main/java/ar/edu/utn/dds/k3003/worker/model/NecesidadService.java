@@ -4,7 +4,7 @@ import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDT
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.TipoNecesidadMaterialEnum;
 import org.springframework.stereotype.Service;
 
-@Service
+
 public class NecesidadService {
 
     public boolean esNecesidadAplicable(NecesidadMaterialDTO necesidad, Integer cantidadDonada) {
