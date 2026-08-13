@@ -5,6 +5,7 @@ import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.InsigniaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.MisionDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -72,6 +73,23 @@ public class DonadoresYEntidadesClient {
                     "Error al satisfacer necesidad",
                     e
             );
+        }
+    }
+
+    // GET /detalle/{id}
+    public NecesidadMaterialDTO obtenerNecesidadPorId(String necesidadID) {
+        try {
+            String url = baseUrl + "/detalle/" + necesidadID;
+
+            return restTemplate.getForObject(
+                    url,
+                    NecesidadMaterialDTO.class
+            );
+
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new NoSuchElementException("No se encontró la necesidad con ID: " + necesidadID);
+        } catch (Exception e) {
+            throw new RuntimeException("Error al consultar detalle de necesidad en DonadoresYEntidades", e);
         }
     }
 }
