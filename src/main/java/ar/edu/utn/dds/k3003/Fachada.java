@@ -64,6 +64,34 @@ public class Fachada implements FachadaLogistica {
                 .description("Deposito creado")
                 .register(meterRegistry);
 
+        // 1. Contador de paquetes creados
+        this.paquetesCreadosCounter = Counter.builder("logistica.paquetes.creados")
+                .description("Cantidad total de paquetes de donación creados")
+                .register(meterRegistry);
+
+        // 2. Contador de unidades físicas donadas acumuladas
+        this.cantidadDonadaTotalCounter = Counter.builder("logistica.donaciones.cantidad.total")
+                .description("Suma total de items/unidades donadas que ingresan al sistema")
+                .register(meterRegistry);
+
+        // 3. Contadores de Asignaciones con Tags para DataDog
+        this.asignacionesMatchmakingCounter = Counter.builder("logistica.asignaciones.creadas")
+                .tag("origen", "matchmaking")
+                .description("Cantidad de asignaciones de paquetes via Algoritmo Matchmaking")
+                .register(meterRegistry);
+
+        this.asignacionesSolicitudExternaCounter = Counter.builder("logistica.asignaciones.creadas")
+                .tag("origen", "solicitud_externa")
+                .description("Cantidad de asignaciones de paquetes via Solicitud Externa")
+                .register(meterRegistry);
+
+        // 4. Resumen de distribución del volumen asignado por operación
+        this.tamanioAsignacionSummary = DistributionSummary.builder("logistica.asignacion.cantidad.unidades")
+                .description("Distribución de la cantidad de unidades asignadas por operación")
+                .baseUnit("unidades")
+                .register(meterRegistry);
+
+
         this.necesidadService = necesidadService;
         this.donadoresYEntidadesClient = donadoresYEntidadesClient;
         this.donacionesClient = donacionesClient;
