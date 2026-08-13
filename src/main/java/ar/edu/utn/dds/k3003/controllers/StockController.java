@@ -22,7 +22,7 @@ public class StockController {
         this.fachada = fachada;
     }
 
-    @PostMapping("/stock")
+    @PostMapping
     public ResponseEntity<Void> guardarEnStock(@RequestBody DonacionMensajeDTO donacion) {
         try {
             fachada.guardarEnStock(
