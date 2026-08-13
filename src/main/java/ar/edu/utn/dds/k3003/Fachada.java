@@ -204,26 +204,29 @@ public class Fachada implements FachadaLogistica {
             ObjectMapper objectMapper = new ObjectMapper();
             String jsonPayload = objectMapper.writeValueAsString(donacionDTO);
 
-            Map<String, String> env = System.getenv();
             ConnectionFactory factory = new ConnectionFactory();
-            factory.setHost(env.get("QUEUE_HOST"));
-            factory.setUsername(env.get("QUEUE_USERNAME"));
-            factory.setPassword(env.get("QUEUE_PASSWORD"));
-            factory.setVirtualHost(env.get("QUEUE_USERNAME"));
 
-            String queueName = env.getOrDefault("QUEUE_NAME", "cola_donaciones");
+            // Poner los datos directamente como String:
+            factory.setHost("jackal.rmq.cloudamqp.com");
+            factory.setUsername("vnfuxbdr");
+            factory.setPassword("Rb_2FdMdZG2INVFVrh4yDIyiPbfU859A");
+            factory.setVirtualHost("vnfuxbdr");
+
+            String queueName = "cola_donaciones";
 
             try (Connection connection = factory.newConnection();
                  Channel channel = connection.createChannel()) {
 
                 channel.queueDeclare(queueName, false, false, false, null);
                 channel.basicPublish("", queueName, null, jsonPayload.getBytes(StandardCharsets.UTF_8));
-                System.out.println("Donación enviada a la cola: " + jsonPayload);
+                System.out.println("📦 Donación enviada a la cola: " + jsonPayload);
             }
         } catch (Exception e) {
             throw new RuntimeException("Error al publicar mensaje en RabbitMQ", e);
         }
     }
+
+
 
     public void guardarEnStock(Integer depositoID, String donacionID, String productoID, Integer cantidadDonada){
         Deposito deposito = depositoRepo.findById(depositoID)

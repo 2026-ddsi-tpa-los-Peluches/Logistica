@@ -79,7 +79,7 @@ public class DonadoresYEntidadesClient {
     // GET /detalle/{id}
     public NecesidadMaterialDTO obtenerNecesidadPorId(String necesidadID) {
         try {
-            String url = baseUrl + "/detalle/" + necesidadID;
+            String url = baseUrl + "/necesidades/detalle/" + necesidadID;
 
             return restTemplate.getForObject(
                     url,
