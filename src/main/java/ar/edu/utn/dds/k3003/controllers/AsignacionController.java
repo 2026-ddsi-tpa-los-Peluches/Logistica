@@ -8,7 +8,7 @@ import ar.edu.utn.dds.k3003.model.AsgnacionRealizadaPor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import ar.edu.utn.dds.k3003.controllers.requests.AsignacionRequest;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -104,6 +104,31 @@ public class AsignacionController {
                     .body(e.getMessage());
         }
 
+    }
+    @PostMapping("/desde-donacion")
+    public ResponseEntity<?> asignarDesdeDonacion(
+            @RequestBody AsignacionRequest request
+    ) {
+        try {
+
+            AsignacionDTO asignacion = fachada.asignarDesdeDonacion(request);
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(asignacion);
+
+        } catch (NoSuchElementException e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
+        }
     }
 
 }

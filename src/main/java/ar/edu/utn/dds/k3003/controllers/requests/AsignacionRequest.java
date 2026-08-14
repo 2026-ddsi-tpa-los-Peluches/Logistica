@@ -4,6 +4,8 @@ public record AsignacionRequest(
         Integer depositoID,
         String donacionID,
         String productoID,
-        Integer cantidad
+        Integer cantidad,
+        String necesidadID,
+        Integer cantidadNecesitada
 ) {
 }

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import ar.edu.utn.dds.k3003.controllers.requests.AsignacionRequest;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -65,5 +66,29 @@ public class LogisticaClient {
             throw new RuntimeException("Error de comunicación al gestionar la donación en Logística", e);
         }
     }
+    public void asignarDesdeDonacion(DonacionMensajeDTO donacion, String necesidadID, Integer cantidadNecesitada) {
+        try {
+            String url = baseUrl + "/asignaciones/desde-donacion";
+
+            AsignacionRequest request = new AsignacionRequest(
+                    donacion.depositoID(),
+                    donacion.donacionID(),
+                    donacion.productoID(),
+                    donacion.cantidadDonada(),
+                    necesidadID,
+                    cantidadNecesitada
+            );
+
+            restTemplate.postForObject(url, request, Void.class);
+
+        } catch (HttpClientErrorException.NotFound e) {
+            String mensajeDeLogistica = e.getResponseBodyAsString();
+            throw new NoSuchElementException(mensajeDeLogistica);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error de comunicación al asignar producto desde donación en Logística", e);
+        }
+    }
+
 }
 

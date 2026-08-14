@@ -69,16 +69,14 @@ public class LogisticaWorker extends DefaultConsumer {
                         donacion.cantidadDonada(),
                         necesidades
                 );
-
-                NecesidadMaterialDTO necesidad = donadoresEntidadesClient.obtenerNecesidadPorId(elegida.getId());
-
-                logisticaClient.asignarProductoAEntidad(necesidad);
+                logisticaClient.asignarDesdeDonacion(donacion, elegida.getId(), elegida.getCantidadFaltante());
 
                 donadoresEntidadesClient.satisfacerNecesidad(
                         elegida.getId(),
                         donacion.cantidadDonada()
                 );
             }
+            
 
             this.getChannel().basicAck(envelope.getDeliveryTag(), false);
 

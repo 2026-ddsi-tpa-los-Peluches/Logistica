@@ -8,6 +8,7 @@ import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
 import ar.edu.utn.dds.k3003.componentes.DonacionesClient;
 import ar.edu.utn.dds.k3003.componentes.DonadoresYEntidadesClient;
 import ar.edu.utn.dds.k3003.model.*;
+import ar.edu.utn.dds.k3003.controllers.requests.AsignacionRequest;
 import ar.edu.utn.dds.k3003.repositories.asignaciones.AsignacionesRepository;
 import ar.edu.utn.dds.k3003.repositories.depositos.DepositosRepository;
 import ar.edu.utn.dds.k3003.repositories.paquetes.PaquetesRepository;
@@ -436,6 +437,23 @@ public class Fachada implements FachadaLogistica {
         depositoRepo.save(depositoElegido);
 
         return cantidadAAsignar;
+    }
+
+    @Transactional
+    public AsignacionDTO asignarDesdeDonacion(AsignacionRequest request) {
+        Deposito deposito = depositoRepo.findById(request.depositoID())
+                .orElseThrow(() -> new NoSuchElementException("Depósito no encontrado: " + request.depositoID()));
+
+        int cantidadAAsignar = cuantoAsignar(request.cantidadNecesitada(), request.cantidad());
+
+        Paquete paquete = new Paquete(
+                request.donacionID(),
+                request.productoID(),
+                cantidadAAsignar
+        );
+
+        return AsignarPaquete(paquete, deposito, request.necesidadID(), request.cantidad(), cantidadAAsignar, request.donacionID(), request.productoID()
+        );
     }
 
     public int cuantoAsignar(int cantidadNecesitada, int cantidadDonada) {
