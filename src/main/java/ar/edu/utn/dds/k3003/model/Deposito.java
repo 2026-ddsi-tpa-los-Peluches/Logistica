@@ -111,6 +111,6 @@ public class Deposito {
     }
 
     public Boolean tieneLugar(int cantidadDonada){
-        return cantidadDonada < capacidadRestante;
+        return cantidadDonada <= capacidadRestante;
     }
 }
