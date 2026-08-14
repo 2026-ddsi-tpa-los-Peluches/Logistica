@@ -368,9 +368,10 @@ public class Fachada implements FachadaLogistica {
             String donacionID,
             String productoID
     ){
+        Paquete paqueteGuardado = (paquete.getId() == null) ? paqueteRepo.save(paquete) : paquete;
 
         Asignacion asignacion = new Asignacion(
-               -1,
+                paqueteGuardado.getId(),
                 necesidadID,
                 LocalDateTime.now(),
                 EstadoAsignacionEnum.ASIGNADA,
