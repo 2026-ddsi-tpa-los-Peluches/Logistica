@@ -401,7 +401,7 @@ public class Fachada implements FachadaLogistica {
     }
 
     @Transactional
-    public int asignarProductoAEntidad(NecesidadMaterialDTO necesidad) {
+    public int asignarProductoAEntidad(NecesidadMaterialDTO necesidad, AsgnacionRealizadaPor tipoAsignacion) {
         String productoID = necesidad.productoSolicitadoID();
         int cantidadNecesitada = necesidad.cantidadObjetivo() - necesidad.cantidadRecibida();
 
@@ -417,7 +417,7 @@ public class Fachada implements FachadaLogistica {
                 necesidad.id(),
                 LocalDateTime.now(),
                 EstadoAsignacionEnum.ASIGNADA,
-                AsgnacionRealizadaPor.SOLICITUD_EXTERNA
+                tipoAsignacion
         );
         asignacionRepo.save(asignacion);
 

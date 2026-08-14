@@ -4,6 +4,7 @@ import ar.edu.utn.dds.k3003.Fachada;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.AsignacionDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.DepositoDTO;
+import ar.edu.utn.dds.k3003.model.AsgnacionRealizadaPor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -59,7 +60,7 @@ public class AsignacionController {
     ) {
         try {
 
-            Integer cantidadAsignada = fachada.asignarProductoAEntidad(request);
+            Integer cantidadAsignada = fachada.asignarProductoAEntidad(request,AsgnacionRealizadaPor.ALGORITMO_MATCHMAKING);
 
             return ResponseEntity.ok(cantidadAsignada);
 
@@ -77,5 +78,33 @@ public class AsignacionController {
         }
 
     }
+
+
+
+    @PostMapping("/externa")
+    public ResponseEntity<?> AsignarProductoAEntidadExterna(
+            @RequestBody NecesidadMaterialDTO request
+    ) {
+        try {
+
+            Integer cantidadAsignada = fachada.asignarProductoAEntidad(request, AsgnacionRealizadaPor.SOLICITUD_EXTERNA);
+
+            return ResponseEntity.ok(cantidadAsignada);
+
+        } catch (NoSuchElementException e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
+        }
+
+    }
+
 }
 
