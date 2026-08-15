@@ -1,6 +1,13 @@
 package ar.edu.utn.dds.k3003.worker.model;
 
 
+import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.TipoNecesidadMaterialEnum;
+import lombok.Getter;
+import lombok.Setter;
+
+
+@Setter
+@Getter
 public class NecesidadLogistica {
 
     String id;
@@ -8,6 +15,7 @@ public class NecesidadLogistica {
     Integer urgencia;
     Integer cantidadObjetivo;
     Integer cantidadRecibida;
+    TipoNecesidadMaterialEnum tipo;
 
     public NecesidadLogistica( String id, String entidadId,  Integer urgencia, Integer cantidadObjetivo, Integer cantidadRecibida){
         this.id = id;
@@ -62,6 +70,8 @@ public class NecesidadLogistica {
     public Integer getCantidadFaltante() {
         return cantidadObjetivo - cantidadRecibida;
     }
+
+
 }
 
 

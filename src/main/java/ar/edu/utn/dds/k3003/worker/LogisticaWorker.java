@@ -2,6 +2,7 @@ package ar.edu.utn.dds.k3003.worker;
 
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionMensajeDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
+import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.TipoNecesidadMaterialEnum;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
 import ar.edu.utn.dds.k3003.componentes.DonadoresYEntidadesClient;
 import ar.edu.utn.dds.k3003.componentes.LogisticaClient;
@@ -61,13 +62,24 @@ public class LogisticaWorker extends DefaultConsumer {
             List<NecesidadLogistica> necesidades = donadoresEntidadesClient.obtenerNecesidadesInsatisfechasDe(donacion.productoID())
                     .stream().map(this::toDomain).toList();
 
-            if (necesidades.isEmpty()) {
+
+            List<NecesidadLogistica> necesidadesAplicables =
+                    necesidades.stream()
+                .filter(n ->
+                        this.esNecesidadAplicable(
+                                n,
+                                donacion.cantidadDonada()
+                        )
+                )
+                .toList();
+
+            if (necesidadesAplicables.isEmpty()) {
                 logisticaClient.guardarEnStock(donacion);
             } else {
                 NecesidadLogistica elegida = ejecutarMatchmaking(
                         donacion.tipoAlgoritmo(),
                         donacion.cantidadDonada(),
-                        necesidades
+                        necesidadesAplicables
                 );
                 logisticaClient.asignarDesdeDonacion(donacion, elegida.getId(), elegida.getCantidadFaltante());
 
@@ -84,6 +96,18 @@ public class LogisticaWorker extends DefaultConsumer {
             System.err.println("Error procesando el mensaje: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private boolean esNecesidadAplicable(NecesidadLogistica necesidad, Integer cantidadDonada) {
+        if(necesidad.getTipo() == TipoNecesidadMaterialEnum.EXTRAORDINARIA) return true;
+        else if (necesidad.getTipo() == TipoNecesidadMaterialEnum.RECURRENTE) {
+            //si lo que necesito es menos o a lo sumo igual de lo que me donaron
+            return (necesidad.getCantidadObjetivo() - necesidad.getCantidadRecibida()) <= cantidadDonada;
+            //capaz estaria bueno que desde donadores y entidades se haga esta logica de
+            // cantidad no cubierta o actual - cantidad faltante
+        }
+        return true;
+
     }
 
     private NecesidadLogistica ejecutarMatchmaking(
