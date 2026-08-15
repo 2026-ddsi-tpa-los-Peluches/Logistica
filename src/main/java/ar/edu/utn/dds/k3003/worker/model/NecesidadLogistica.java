@@ -17,12 +17,13 @@ public class NecesidadLogistica {
     Integer cantidadRecibida;
     TipoNecesidadMaterialEnum tipo;
 
-    public NecesidadLogistica( String id, String entidadId,  Integer urgencia, Integer cantidadObjetivo, Integer cantidadRecibida){
+    public NecesidadLogistica( String id, String entidadId,  Integer urgencia, Integer cantidadObjetivo, Integer cantidadRecibida,TipoNecesidadMaterialEnum tipo){
         this.id = id;
         this.entidadId = entidadId;
         this.urgencia = urgencia;
         this.cantidadObjetivo = cantidadObjetivo;
         this.cantidadRecibida = cantidadRecibida;
+        this.tipo = tipo;
     }
 
 
@@ -70,6 +71,8 @@ public class NecesidadLogistica {
     public Integer getCantidadFaltante() {
         return cantidadObjetivo - cantidadRecibida;
     }
+
+    public TipoNecesidadMaterialEnum getTipo(){return tipo;}
 
 
 }

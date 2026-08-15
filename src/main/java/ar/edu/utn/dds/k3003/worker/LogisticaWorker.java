@@ -142,7 +142,8 @@ public class LogisticaWorker extends DefaultConsumer {
                 dto.entidadID(),
                 dto.nivelDeUrgencia(),
                 dto.cantidadObjetivo(),
-                dto.cantidadRecibida()
+                dto.cantidadRecibida(),
+                dto.tipo()
         );
     }
 }
