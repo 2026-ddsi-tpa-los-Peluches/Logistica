@@ -380,6 +380,8 @@ public class Fachada implements FachadaLogistica {
 
         Asignacion asignacionConId = asignacionRepo.save(asignacion);
 
+        paqueteRepo.delete(paqueteGuardado);
+
         // --- REGISTRO DE MÉTRICAS 3 Y 4 ---
         this.asignacionesMatchmakingCounter.increment();
         this.tamanioAsignacionSummary.record(cantidadAAsignar);
