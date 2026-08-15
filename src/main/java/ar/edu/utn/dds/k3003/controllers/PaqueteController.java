@@ -55,14 +55,14 @@ public class PaqueteController {
     }
 
     @PostMapping
-    public ResponseEntity<?> registrarEntrega (@RequestBody PaqueteRequest paqueteRequest) {
+    public ResponseEntity<?> registrarEntrega (@RequestBody Integer asignacionId) {
         // Este endpoint depende de los módulos (Donadores y Entidades) y Donaciones
         // Como los módulos no están integrados,
         // actualmente este endpoint requiere mocks/fakes para poder testearse.
 
         try {
-                PaqueteDTO paqueteDTO = fachada.buscarPaquetePorID(paqueteRequest.paqueteId());
-            fachada.reportarEntrega(paqueteDTO);
+
+            fachada.reportarEntrega(asignacionId);
 
             return ResponseEntity
                     .status(HttpStatus.CREATED)

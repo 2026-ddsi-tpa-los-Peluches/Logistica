@@ -8,8 +8,8 @@ import java.util.Optional;
 public interface AsignacionesRepository
         extends JpaRepository<Asignacion, Integer> {
 
-    Optional<Asignacion>
-    findByPaqueteId(Integer paqueteId);
+//    Optional<Asignacion>
+//    findByPaqueteId(Integer paqueteId);
 }
 
 

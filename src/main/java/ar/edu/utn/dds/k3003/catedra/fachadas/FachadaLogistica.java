@@ -13,7 +13,7 @@ public interface FachadaLogistica {
 
   DepositoDTO buscarDepositoPorID(Integer depositoID) throws NoSuchElementException;
 
-  AsignacionDTO buscarAsignacionPorPaqueteID(Integer paqueteID) throws NoSuchElementException;
+//  AsignacionDTO buscarAsignacionPorPaqueteID(Integer paqueteID) throws NoSuchElementException;
 
   AsignacionDTO gestionarDonacion(
           Integer depositoID, String donacionID, String  productoID, Integer cantidad)
@@ -21,5 +21,5 @@ public interface FachadaLogistica {
 
   void setAlgoritmoMM(Integer depositoID, TipoAlgoritmoEnum tipoAlgoritmo);
 
-  void reportarEntrega(PaqueteDTO paqueteDTO);
+  void reportarEntrega(Integer asignacionId);
 }

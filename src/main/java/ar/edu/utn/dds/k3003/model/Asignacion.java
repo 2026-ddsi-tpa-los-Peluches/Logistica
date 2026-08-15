@@ -15,9 +15,10 @@ public class Asignacion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    Integer paqueteId;
+    String donacionId;
     String necesidadId;
     LocalDateTime fecha;
+    Integer cantidad;
 
     @Enumerated(EnumType.STRING)
     AsgnacionRealizadaPor formaDeAsignacion;
@@ -31,8 +32,8 @@ public class Asignacion {
 
     public Asignacion(){}
 
-    public Asignacion(Integer paquete, String necesidadID, LocalDateTime fecha, EstadoAsignacionEnum estado, AsgnacionRealizadaPor formaDeAsignacion) {
-        this.paqueteId = paquete;
+    public Asignacion(String donacionId, String necesidadID, LocalDateTime fecha, EstadoAsignacionEnum estado, AsgnacionRealizadaPor formaDeAsignacion,Integer cantidad) {
+        this.donacionId = donacionId;
         this.necesidadId = necesidadID;
         this.fecha = fecha;
         this.estado = estado;
@@ -45,6 +46,8 @@ public class Asignacion {
                 )
         );
         this.formaDeAsignacion = formaDeAsignacion;
+
+        this.cantidad = cantidad;
     }
 
 
@@ -57,8 +60,8 @@ public class Asignacion {
         return id;
     }
 
-    public Integer getPaqueteId() {
-        return paqueteId;
+    public String getDonacionId() {
+        return donacionId;
     }
 
     public List<HistorialEstadoAsignacion> getHistorialEstadoAsignaciones() {
@@ -94,6 +97,10 @@ public class Asignacion {
     public void setId(Integer id) {
         this.id = id;
     }
+
+    public void setCantidad(Integer cantidadNueva){this.cantidad = cantidadNueva;}
+
+    public Integer getCantidad(){return this.cantidad;}
 }
 
 
