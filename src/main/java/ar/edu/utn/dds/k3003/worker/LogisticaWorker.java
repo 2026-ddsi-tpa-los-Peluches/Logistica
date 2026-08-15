@@ -3,6 +3,7 @@ package ar.edu.utn.dds.k3003.worker;
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionMensajeDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.TipoNecesidadMaterialEnum;
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.AsignacionDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
 import ar.edu.utn.dds.k3003.componentes.DonadoresYEntidadesClient;
 import ar.edu.utn.dds.k3003.componentes.LogisticaClient;
@@ -81,11 +82,11 @@ public class LogisticaWorker extends DefaultConsumer {
                         donacion.cantidadDonada(),
                         necesidadesAplicables
                 );
-                logisticaClient.asignarDesdeDonacion(donacion, elegida.getId(), elegida.getCantidadFaltante());
+                AsignacionDTO asignacionDTO = logisticaClient.asignarDesdeDonacion(donacion, elegida.getId(), elegida.getCantidadFaltante());
 
                 donadoresEntidadesClient.satisfacerNecesidad(
                         elegida.getId(),
-                        donacion.cantidadDonada()
+                        asignacionDTO.cantidad()
                 );
             }
             

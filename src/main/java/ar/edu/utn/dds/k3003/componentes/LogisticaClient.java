@@ -2,6 +2,7 @@ package ar.edu.utn.dds.k3003.componentes;
 
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionMensajeDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.AsignacionDTO;
 import ar.edu.utn.dds.k3003.worker.model.NecesidadLogistica;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -66,7 +67,7 @@ public class LogisticaClient {
             throw new RuntimeException("Error de comunicación al gestionar la donación en Logística", e);
         }
     }
-    public void asignarDesdeDonacion(DonacionMensajeDTO donacion, String necesidadID, Integer cantidadNecesitada) {
+    public AsignacionDTO asignarDesdeDonacion(DonacionMensajeDTO donacion, String necesidadID, Integer cantidadNecesitada) {
         try {
             String url = baseUrl + "/asignaciones/desde-donacion";
 
@@ -79,7 +80,7 @@ public class LogisticaClient {
                     cantidadNecesitada
             );
 
-            restTemplate.postForObject(url, request, Void.class);
+            return restTemplate.postForObject(url, request, AsignacionDTO.class);
 
         } catch (HttpClientErrorException.NotFound e) {
             String mensajeDeLogistica = e.getResponseBodyAsString();
