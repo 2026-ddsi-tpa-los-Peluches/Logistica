@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 public record AsignacionDTO(
     Integer id,
-    String donacionId,
+    Integer paqueteId,
     String necesidadID,
     LocalDateTime fecha,
     EstadoAsignacionEnum estado,

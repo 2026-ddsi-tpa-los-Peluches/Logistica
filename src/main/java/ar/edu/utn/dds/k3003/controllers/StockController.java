@@ -3,13 +3,12 @@ package ar.edu.utn.dds.k3003.controllers;
 
 import ar.edu.utn.dds.k3003.Fachada;
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionMensajeDTO;
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.DepositoStockDTO;
 import ar.edu.utn.dds.k3003.controllers.requests.PaqueteRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @RestController
@@ -40,4 +39,16 @@ public class StockController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping
+    public ResponseEntity<List<DepositoStockDTO>> obtenerTodoElStock() {
+        try {
+            List<DepositoStockDTO> stock = fachada.obtenerTodoElStock();
+            return ResponseEntity.ok(stock);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+
 }

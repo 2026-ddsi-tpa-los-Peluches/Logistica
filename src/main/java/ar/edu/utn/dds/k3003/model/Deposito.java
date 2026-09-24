@@ -3,6 +3,8 @@ package ar.edu.utn.dds.k3003.model;
 
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,14 +14,24 @@ import java.util.List;
 @Table(name = "depositos")
 public class Deposito {
 
+    // getters
+    @Setter
+    @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+    @Getter
     private String nombre;
+    @Getter
     private String direccion;
+    @Getter
     private int capacidadMaxima;
+    @Setter
+    @Getter
     private int capacidadRestante;
 
+    @Setter
+    @Getter
     @Enumerated(EnumType.STRING)
     public TipoAlgoritmoEnum tipoAlgoritmo;
 
@@ -39,23 +51,6 @@ public class Deposito {
     }
 
 
-    // getters
-    public Integer getId() {
-        return id;
-    }
-
-    public String getDireccion() {
-        return direccion;
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public int getCapacidadMaxima() {
-        return capacidadMaxima;
-    }
-
     public List<Paquete> getStockActual(){
         //return stockActual;
         return new ArrayList<>(stockActual);
@@ -63,24 +58,6 @@ public class Deposito {
 
     public void removerPaquete(Paquete paquete) {
         this.stockActual.remove(paquete);
-    }
-
-    public TipoAlgoritmoEnum getTipoAlgoritmo() {
-        return tipoAlgoritmo;
-    }
-
-    public void setTipoAlgoritmo(TipoAlgoritmoEnum tipoAlgoritmo) {
-        this.tipoAlgoritmo = tipoAlgoritmo;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public int getCapacidadRestante() {return capacidadRestante;}
-
-    public void setCapacidadRestante(int capacidadRestante) {
-        this.capacidadRestante = capacidadRestante;
     }
 
     public void agregarPaquete(Paquete paqueteNuevo) {

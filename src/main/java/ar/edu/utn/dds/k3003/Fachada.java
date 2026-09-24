@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class Fachada implements FachadaLogistica {
@@ -338,8 +339,25 @@ public class Fachada implements FachadaLogistica {
 
     private OpcionStock buscarMejorOpcionStock(String productoID, int cantidadSolicitada) {
         List<Deposito> depositos = depositoRepo.findAll();
-        List<OpcionStock> candidatos = new ArrayList<>();
+        List<OpcionStock> candidatos = getOpcionStocks(productoID, depositos);
 
+        // Primero intentamos encontrar paquetes que alcancen la cantidad solicitada
+        return candidatos.stream()
+                .filter(opcion -> opcion.paquete().getCantidad() >= cantidadSolicitada)
+                .min(Comparator.comparingInt(opcion ->
+                        opcion.paquete().getCantidad()
+                ))
+                // Si ninguno alcanza, elegimos el más cercano igualmente
+                .orElseGet(() -> candidatos.stream()
+                        .min(Comparator.comparingInt(opcion ->
+                                Math.abs(opcion.paquete().getCantidad() - cantidadSolicitada)
+                        ))
+                        .orElseThrow()
+                );
+    }
+
+    private List<OpcionStock> getOpcionStocks(String productoID, List<Deposito> depositos) {
+        List<OpcionStock> candidatos = new ArrayList<>();
         for (Deposito deposito : depositos) {
             for (Paquete paquete : deposito.getStockActual()) {
                 if (productoID.equals(paquete.getProductoID())) {
@@ -349,13 +367,11 @@ public class Fachada implements FachadaLogistica {
         }
 
         if (candidatos.isEmpty()) {
-            throw new NoSuchElementException("No hay stock disponible para el producto: " + productoID);
+            throw new NoSuchElementException(
+                    "No hay stock disponible para el producto: " + productoID
+            );
         }
-
-        return candidatos.stream()
-                .min(Comparator.comparingInt(opcion ->
-                        Math.abs(opcion.paquete().getCantidad() - cantidadSolicitada)))
-                .orElseThrow();
+        return candidatos;
     }
 
     AsignacionDTO AsignarPaquete(
@@ -370,7 +386,7 @@ public class Fachada implements FachadaLogistica {
 //        Paquete paqueteGuardado = (paquete.getId() == null) ? paqueteRepo.save(paquete) : paquete;
 
         Asignacion asignacion = new Asignacion(
-                donacionID,
+                paquete.getId(),
                 necesidadID,
                 LocalDateTime.now(),
                 EstadoAsignacionEnum.ASIGNADA,
@@ -414,7 +430,7 @@ public class Fachada implements FachadaLogistica {
         int cantidadAAsignar = cuantoAsignar(cantidadNecesitada, paqueteElegido.getCantidad());
 
         Asignacion asignacion = new Asignacion(
-                paqueteElegido.getDonacionID(),
+                paqueteElegido.getId(),
                 necesidad.id(),
                 LocalDateTime.now(),
                 EstadoAsignacionEnum.ASIGNADA,
@@ -428,12 +444,8 @@ public class Fachada implements FachadaLogistica {
         this.asignacionesSolicitudExternaCounter.increment();
         this.tamanioAsignacionSummary.record(cantidadAAsignar);
 
-        if (paqueteElegido.getCantidad() == cantidadAAsignar) {
-            depositoElegido.removerPaquete(paqueteElegido);
-            paqueteRepo.delete(paqueteElegido);
-        } else {
-            paqueteElegido.restarCantidad(cantidadAAsignar);
-        }
+
+        paqueteElegido.restarCantidad(cantidadAAsignar);
 
         depositoElegido.setCapacidadRestante(depositoElegido.getCapacidadRestante() + cantidadAAsignar);
         depositoRepo.save(depositoElegido);
@@ -530,8 +542,13 @@ public class Fachada implements FachadaLogistica {
             return;
         }
 
+        Paquete paquete = paqueteRepo.findById(asignacion.getPaqueteId())
+                .orElseThrow(() ->
+                        new NoSuchElementException("Paquete no encontrado")
+                );
+
         donacionesClient.cambiarEstadoDeDonacion(
-                asignacion.getDonacionId(),
+                paquete.getDonacionID(),
                 EstadoDonacionEnum.ACEPTADA
         );
 
@@ -546,13 +563,29 @@ public class Fachada implements FachadaLogistica {
 
     // toDTO
     private DepositoDTO toDTO(Deposito deposito) {
+        // 1. Agrupamos los paquetes por producto y sumamos las cantidades de cada grupo
+        List<PaqueteDTO> stockAgrupado = deposito.getStockActual().stream()
+                .collect(Collectors.groupingBy(
+                        Paquete::getProductoID, // o getProductoId(), según cómo lo tengas en tu entidad Paquete
+                        Collectors.summingInt(Paquete::getCantidad)
+                ))
+                .entrySet().stream()
+                .map(entry -> new PaqueteDTO(
+                        null,             // id del paquete individual (no aplica al agrupar)
+                        null,             // donacionID individual (no aplica al agrupar)
+                        entry.getKey(),   // Producto / ProductoID
+                        entry.getValue()  // Cantidad total sumada
+                ))
+                .toList();
+
+        // 2. Retornamos el DepositoDTO con la lista consolidada
         return new DepositoDTO(
                 deposito.getId(),
                 deposito.getTipoAlgoritmo(),
                 deposito.getNombre(),
                 deposito.getDireccion(),
                 deposito.getCapacidadMaxima(),
-                deposito.getStockActual().stream().map(this::toDTO).toList()
+                stockAgrupado
         );
     }
 
@@ -568,7 +601,7 @@ public class Fachada implements FachadaLogistica {
     private AsignacionDTO toDTO(Asignacion asignacion) {
         return new AsignacionDTO(
                 asignacion.getId(),
-                asignacion.getDonacionId(),
+                asignacion.getPaqueteId(),
                 asignacion.getNecesidadId(),
                 asignacion.getFecha(),
                 asignacion.getEstado(),
@@ -603,5 +636,16 @@ public class Fachada implements FachadaLogistica {
                 dto.cantidadRecibida(),
                 dto.tipo()
         );
+    }
+
+    public List<DepositoStockDTO> obtenerTodoElStock() {
+        return depositoRepo.findAll().stream()
+                .flatMap(deposito -> deposito.getStockActual().stream() // o getStockActual(), según el nombre de la relación en tu entidad Deposito
+                        .map(paquete -> new DepositoStockDTO(
+                                deposito.getId(),
+                                paquete.getId()
+                        ))
+                )
+                .toList();
     }
 }
