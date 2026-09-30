@@ -69,19 +69,8 @@ public class Deposito {
             throw new IllegalStateException("Capacidad insuficiente en el depósito.");
         }
 
-       //Buscar si ya hay un paquete en la lista con el mismo productoID
-        Paquete paqueteExistente = stockActual.stream()
-                .filter(p -> p.getProductoID() != null && p.getProductoID().equals(paqueteNuevo.getProductoID()))
-                .findFirst()
-                .orElse(null);
 
-        if (paqueteExistente != null) {
-            // Si existe, le sumamos la cantidad al paquete existente
-            paqueteExistente.sumarCantidad(paqueteNuevo.getCantidad());
-        } else {
-            // Si no existe, agregamos el nuevo paquete a la lista
-            this.stockActual.add(paqueteNuevo);
-        }
+        this.stockActual.add(paqueteNuevo);
 
         // 3. Descontamos la capacidad restante
         this.capacidadRestante -= paqueteNuevo.getCantidad();
