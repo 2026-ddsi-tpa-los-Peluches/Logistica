@@ -3,6 +3,7 @@ package ar.edu.utn.dds.k3003.componentes;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.InsigniaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.MisionDTO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -10,7 +11,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
-
+@Slf4j
 @Service
 public class DonadoresYEntidadesClient {
 
@@ -62,6 +63,7 @@ public class DonadoresYEntidadesClient {
 
             request.put("cantidad", cantidad);
 
+
             return restTemplate.postForObject(
                     url,
                     request,
@@ -69,6 +71,7 @@ public class DonadoresYEntidadesClient {
             );
 
         } catch (Exception e) {
+            log.error("Error al satisfacer necesidad: necesidadID={} cantidad={}",necesidadID,cantidad);
             throw new RuntimeException(
                     "Error al satisfacer necesidad",
                     e
@@ -87,8 +90,10 @@ public class DonadoresYEntidadesClient {
             );
 
         } catch (HttpClientErrorException.NotFound e) {
+            log.error("Error necesidad no existente: necesidadID={}",necesidadID);
             throw new NoSuchElementException("No se encontró la necesidad con ID: " + necesidadID);
         } catch (Exception e) {
+            log.error("Error al consultar datos de necesidad a donadoresYEntidades: necesidadID={}",necesidadID);
             throw new RuntimeException("Error al consultar detalle de necesidad en DonadoresYEntidades", e);
         }
     }

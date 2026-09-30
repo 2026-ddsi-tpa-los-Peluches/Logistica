@@ -4,6 +4,7 @@ import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionMensajeDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.AsignacionDTO;
 import ar.edu.utn.dds.k3003.worker.model.NecesidadLogistica;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+@Slf4j
 @Service
 public class LogisticaClient {
 
@@ -23,7 +25,7 @@ public class LogisticaClient {
 
     public LogisticaClient(@Value("${url.logistica}")String baseUrl) {
 
-        System.out.println("LOGISTICA URL = " + baseUrl);
+        log.info("LOGISTICA URL = {}", baseUrl);
 
         this.baseUrl = baseUrl;
     }
@@ -39,9 +41,12 @@ public class LogisticaClient {
                     Void.class
             );
 
-            System.out.println("Donación guardada en stock correctamente.");
+
+            log.info("Donacion guardada en stock correctamenteL: mensajeDonacion= {}", donacion);
+            //System.out.println("Donación guardada en stock correctamente.");
 
         } catch (Exception e) {
+            log.error("Error al guardar donacion en el stock {}",donacion.donacionID());
             throw new RuntimeException(
                     "Error al guardar donación en stock en Logística",
                     e
@@ -55,6 +60,8 @@ public class LogisticaClient {
             String url = baseUrl + "/asignaciones";
 
             ResponseEntity<Integer> response = restTemplate.postForEntity(url, necesidad, Integer.class);
+
+            log.info("Asignamos producto a entidad: necesidadMaterial={}", necesidad);
 
             return response.getBody();
 
@@ -79,6 +86,8 @@ public class LogisticaClient {
                     necesidadID,
                     cantidadNecesitada
             );
+
+            log.info("Asignando desde donacion: necesidadID= {} mensajeDonacion={} cantidadNecesitada={}",necesidadID,donacion,cantidadNecesitada);
 
             return restTemplate.postForObject(url, request, AsignacionDTO.class);
 

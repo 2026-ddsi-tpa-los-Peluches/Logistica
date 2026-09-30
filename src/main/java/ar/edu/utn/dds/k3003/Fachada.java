@@ -23,6 +23,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class Fachada implements FachadaLogistica {
 
@@ -104,6 +106,7 @@ public class Fachada implements FachadaLogistica {
     @Override
     public DepositoDTO agregarDeposito(DepositoDTO depositoDTO) {
         if (depositoDTO == null || depositoDTO.id() != null) {
+            log.warn("Alta de depósito rechazada: depósito inválido");
             throw new IllegalArgumentException("Deposito inválido");
         }
 
@@ -118,6 +121,9 @@ public class Fachada implements FachadaLogistica {
         this.depositosCreadosCounter.increment();
 
         Deposito depositoConId = depositoRepo.save(deposito);
+
+        log.info("Depósito creado: id={}, nombre={}, capacidadMaxima={}",
+                depositoConId.getId(), depositoDTO.nombre(), depositoDTO.capacidadMaxima());
 
         return toDTO(depositoConId);
     }
@@ -142,9 +148,14 @@ public class Fachada implements FachadaLogistica {
 
     public void borrarDepositoPorID(Integer id) {
         Deposito deposito = depositoRepo.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Depósito no encontrado: " + id));
+                .orElseThrow(() -> {
+                    log.warn("No se pudo eliminar el depósito {}: no encontrado", id);
+                    return new NoSuchElementException("Depósito no encontrado: " + id);
+                });
 
         depositoRepo.delete(deposito);
+
+        log.info("Depósito eliminado: id={}", id);
     }
 //
 //    @Override
@@ -174,13 +185,19 @@ public class Fachada implements FachadaLogistica {
             throws NoSuchElementException {
 
         if (cantidadDonada == null || cantidadDonada <= 0) {
+            log.warn("Donación {} rechazada: cantidad inválida ({})", donacionID, cantidadDonada);
             throw new IllegalArgumentException("Cantidad inválida");
         }
 
         Deposito deposito = depositoRepo.findById(depositoID)
-                .orElseThrow(() -> new NoSuchElementException("Depósito no encontrado: " + depositoID));
+                .orElseThrow(() -> {
+                    log.warn("Donación {} rechazada: depósito {} no encontrado", donacionID, depositoID);
+                    return new NoSuchElementException("Depósito no encontrado: " + depositoID);
+                });
 
         if (!deposito.tieneLugar(cantidadDonada)) {
+            log.warn("Donación {} rechazada: el depósito {} no tiene lugar para {} unidades",
+                    donacionID, depositoID, cantidadDonada);
             throw new IllegalArgumentException("El depósito asignado no tiene lugar suficiente");
         }
 
@@ -196,6 +213,9 @@ public class Fachada implements FachadaLogistica {
         );
 
         publicarMensajeEnCola(payload);
+
+        log.info("Donación recibida y publicada en la cola: donacionID={}, depositoID={}, productoID={}, cantidad={}",
+                donacionID, depositoID, productoID, cantidadDonada);
 
         return null;
     }
@@ -220,9 +240,10 @@ public class Fachada implements FachadaLogistica {
 
                 channel.queueDeclare(queueName, false, false, false, null);
                 channel.basicPublish("", queueName, null, jsonPayload.getBytes(StandardCharsets.UTF_8));
-                System.out.println("📦 Donación enviada a la cola: " + jsonPayload);
+                log.debug("Mensaje publicado en la cola {}: {}", queueName, jsonPayload);
             }
         } catch (Exception e) {
+            log.error("Error al publicar la donación en RabbitMQ", e);
             throw new RuntimeException("Error al publicar mensaje en RabbitMQ", e);
         }
     }
@@ -231,9 +252,14 @@ public class Fachada implements FachadaLogistica {
 
     public void guardarEnStock(Integer depositoID, String donacionID, String productoID, Integer cantidadDonada){
         Deposito deposito = depositoRepo.findById(depositoID)
-                .orElseThrow(() -> new NoSuchElementException("Depósito no encontrado: " + depositoID));
+                .orElseThrow(() -> {
+                    log.warn("No se pudo guardar en stock la donación {}: depósito {} no encontrado", donacionID, depositoID);
+                    return new NoSuchElementException("Depósito no encontrado: " + depositoID);
+                });
 
         if (!deposito.tieneLugar(cantidadDonada)) {
+            log.warn("No se pudo guardar en stock la donación {}: el depósito {} no tiene lugar para {} unidades",
+                    donacionID, depositoID, cantidadDonada);
             throw new IllegalArgumentException("El deposito asignado no tiene lugar suficiente");
         }
 
@@ -248,6 +274,9 @@ public class Fachada implements FachadaLogistica {
 
         // --- REGISTRO DE MÉTRICA 1: Nuevo paquete creado en stock ---
         this.paquetesCreadosCounter.increment();
+
+        log.info("Paquete guardado en stock: donacionID={}, productoID={}, cantidad={}, depositoID={}",
+                donacionID, productoID, cantidadDonada, depositoID);
     }
 
 //    public AsignacionDTO gestiowerwernarDonacion(Integer depositoID, String donacionID, String productoID, Integer cantidadDonada)
@@ -367,6 +396,7 @@ public class Fachada implements FachadaLogistica {
         }
 
         if (candidatos.isEmpty()) {
+            log.warn("No hay stock disponible para el producto {}", productoID);
             throw new NoSuchElementException(
                     "No hay stock disponible para el producto: " + productoID
             );
@@ -414,6 +444,10 @@ public class Fachada implements FachadaLogistica {
             // --- REGISTRO DE MÉTRICA 1 ---
             this.paquetesCreadosCounter.increment();
         }
+
+        log.info("Asignación creada (matchmaking): id={}, paqueteID={}, necesidadID={}, cantidad={}, sobrante={}",
+                asignacionConId.getId(), asignacionConId.getPaqueteId(), necesidadID, cantidadAAsignar, cantidadSobrante);
+
         return toDTO(asignacionConId);
     }
 
@@ -450,13 +484,20 @@ public class Fachada implements FachadaLogistica {
         depositoElegido.setCapacidadRestante(depositoElegido.getCapacidadRestante() + cantidadAAsignar);
         depositoRepo.save(depositoElegido);
 
+        log.info("Producto asignado a entidad: necesidadID={}, productoID={}, cantidad={}, depositoID={}, origen={}",
+                necesidad.id(), productoID, cantidadAAsignar, depositoElegido.getId(), tipoAsignacion);
+
         return cantidadAAsignar;
     }
 
     @Transactional
     public AsignacionDTO asignarDesdeDonacion(AsignacionRequest request) {
         Deposito deposito = depositoRepo.findById(request.depositoID())
-                .orElseThrow(() -> new NoSuchElementException("Depósito no encontrado: " + request.depositoID()));
+                .orElseThrow(() -> {
+                    log.warn("No se pudo asignar desde la donación {}: depósito {} no encontrado",
+                            request.donacionID(), request.depositoID());
+                    return new NoSuchElementException("Depósito no encontrado: " + request.depositoID());
+                });
 
         int cantidadAAsignar = cuantoAsignar(request.cantidadNecesitada(), request.cantidad());
 
@@ -480,11 +521,15 @@ public class Fachada implements FachadaLogistica {
     ) {
         Deposito deposito = depositoRepo
                 .findById(depositoId)
-                .orElseThrow(() ->
-                        new NoSuchElementException("Deposito no encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("No se pudo cambiar el algoritmo: depósito {} no encontrado", depositoId);
+                    return new NoSuchElementException("Deposito no encontrado");
+                });
 
         deposito.setTipoAlgoritmo(algoritmo);
         depositoRepo.save(deposito);
+
+        log.info("Algoritmo de depósito cambiado: depositoID={}, algoritmo={}", depositoId, algoritmo);
 
         return toDTO(deposito);
     }
@@ -492,10 +537,15 @@ public class Fachada implements FachadaLogistica {
     @Override
     public void setAlgoritmoMM(Integer depositoID, TipoAlgoritmoEnum tipoAlgoritmo) {
         Deposito deposito  = depositoRepo.findById(depositoID)
-                .orElseThrow(() -> new NoSuchElementException("Depósito no encontrado: " + depositoID));
+                .orElseThrow(() -> {
+                    log.warn("No se pudo cambiar el algoritmo: depósito {} no encontrado", depositoID);
+                    return new NoSuchElementException("Depósito no encontrado: " + depositoID);
+                });
 
         deposito.setTipoAlgoritmo(tipoAlgoritmo);
         depositoRepo.save(deposito);
+
+        log.info("Algoritmo de depósito cambiado: depositoID={}, algoritmo={}", depositoID, tipoAlgoritmo);
     }
 
     private NecesidadLogistica ejecutarMatchmaking(
@@ -504,10 +554,12 @@ public class Fachada implements FachadaLogistica {
             List<NecesidadLogistica> necesidadesLogistica) {
 
         if (cantidadDonada < 0) {
+            log.warn("Matchmaking rechazado: cantidad donada negativa ({})", cantidadDonada);
             throw new IllegalArgumentException("no dona nada y hasta roba");
         }
 
         if (necesidadesLogistica == null || necesidadesLogistica.isEmpty()) {
+            log.warn("Matchmaking sin necesidades disponibles");
             throw new NoSuchElementException("No hay necesidades");
         }
 
@@ -519,6 +571,7 @@ public class Fachada implements FachadaLogistica {
         );
 
         if (elegida == null) {
+            log.warn("Matchmaking no pudo elegir una necesidad (cantidadDonada={})", cantidadDonada);
             throw new NoSuchElementException("No se pudo asignar necesidad");
         }
         return elegida;
@@ -528,24 +581,29 @@ public class Fachada implements FachadaLogistica {
     public void reportarEntrega(Integer asignacionId) {
 
         if (asignacionId == null) {
+            log.warn("Reporte de entrega rechazado: asignación inválida");
             throw new IllegalArgumentException("Asignacion inválida");
         }
 
 
         Asignacion asignacion =
                 asignacionRepo.findById(asignacionId)
-                        .orElseThrow(() ->
-                                new NoSuchElementException("Asignacion no encontrada")
-                        );
+                        .orElseThrow(() -> {
+                            log.warn("Reporte de entrega rechazado: asignación {} no encontrada", asignacionId);
+                            return new NoSuchElementException("Asignacion no encontrada");
+                        });
 
         if(asignacion.getEstado() == EstadoAsignacionEnum.COMPLETADA) {
+            log.info("Entrega de la asignación {} ya estaba reportada", asignacionId);
             return;
         }
 
         Paquete paquete = paqueteRepo.findById(asignacion.getPaqueteId())
-                .orElseThrow(() ->
-                        new NoSuchElementException("Paquete no encontrado")
-                );
+                .orElseThrow(() -> {
+                    log.warn("Reporte de entrega rechazado: paquete {} de la asignación {} no encontrado",
+                            asignacion.getPaqueteId(), asignacionId);
+                    return new NoSuchElementException("Paquete no encontrado");
+                });
 
         donacionesClient.cambiarEstadoDeDonacion(
                 paquete.getDonacionID(),
@@ -559,6 +617,8 @@ public class Fachada implements FachadaLogistica {
 
         asignacion.completada();
         asignacionRepo.save(asignacion);
+
+        log.info("Entrega reportada: asignacionID={}, donacionID={}", asignacionId, paquete.getDonacionID());
     }
 
     // toDTO

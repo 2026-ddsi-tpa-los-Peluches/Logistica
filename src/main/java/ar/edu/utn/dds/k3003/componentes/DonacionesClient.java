@@ -4,6 +4,7 @@ import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.EstadoDonacionEnum;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.InsigniaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.MisionDTO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
+@Slf4j
 @Service
 public class DonacionesClient {
 
@@ -41,6 +43,8 @@ public class DonacionesClient {
 
             Map<String, String> body = Map.of("estado", estado.name());
             HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
+
+            log.info("Cambiar estado de donacion: donacionID={} estado={}",donacionID,estado);
 
             return restTemplate.exchange(
                     url,

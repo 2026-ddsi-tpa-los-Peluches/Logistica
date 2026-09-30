@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!--
+      Consola: siempre activa (en local se ve en la terminal, en Render en la pestaña Logs).
+      %X{traceId}, %X{instanceId} y %X{requestId} salen del MDC que carga RequestLoggingFilter
+      (o Fachada.revisarEstadoMisiones para las corridas del Cron).
+      %method:%line agrega metodo y linea exactos desde donde se logueo.
+    -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36}.%method:%line [trace=%X{traceId} instance=%X{instanceId} req=%X{requestId}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+      Better Stack: solo se activa si existe la env var BETTERSTACK_SOURCE_TOKEN.
+      Sin token la app arranca igual y loguea solo por consola.
+      El token y el host NUNCA van en este archivo: se cargan como env vars en Render.
+
+      El <if> tiene que envolver el <root> completo (Logback no soporta <if> dentro de <root>).
+      El atributo condition="..." esta deprecado desde Logback 1.5.20, pero sigue funcionando
+      (solo tira un warning al arrancar).
+    -->
+    <if condition='isDefined("BETTERSTACK_SOURCE_TOKEN")'>
+        <then>
+            <appender name="BETTERSTACK" class="com.logtail.logback.LogtailAppender">
+                <!-- Solo logs de nuestro codigo + WARN/ERROR de frameworks (ver BetterStackFilter).
+                     El arranque de Spring/Tomcat queda solo en consola. -->
+                <filter class="ar.edu.utn.dds.k3003.config.BetterStackFilter"/>
+                <appName>${APP_NAME:-logistica}</appName>
+                <sourceToken>${BETTERSTACK_SOURCE_TOKEN}</sourceToken>
+                <ingestUrl>${BETTERSTACK_INGEST_URL:-https://in.logs.betterstack.com}</ingestUrl>
+                <mdcFields>traceId,instanceId,requestId</mdcFields>
+                <mdcTypes>string,string,string</mdcTypes>
+            </appender>
+            <root level="INFO">
+                <appender-ref ref="CONSOLE"/>
+                <appender-ref ref="BETTERSTACK"/>
+            </root>
+        </then>
+        <else>
+            <root level="INFO">
+                <appender-ref ref="CONSOLE"/>
+            </root>
+        </else>
+    </if>
+
+</configuration>
