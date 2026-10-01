@@ -17,10 +17,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *
  * <p>traceId: identifica toda la cadena de llamadas entre modulos. Si el request trae el header
  * {@link #TRACE_ID_HEADER} lo reusa (lo mando otro modulo); si no, lo genera porque este request
- * es el punto de entrada. Los clientes REST (DonacionesProxy, DonadoresYEntidadesProxy,
- * DonadoresYEntidadesClient) lo reenvian en ese mismo header.
+ * es el punto de entrada.
  *
  * <p>requestId: identifica solo este request en este modulo (no se propaga).
+ *
+ * <p>No se loguea cada request exitoso (GET/POST con 2xx/3xx) para no llenar Better Stack de ruido:
+ * solo se loguean las respuestas con error (4xx como WARN, 5xx como ERROR). Los logs de negocio
+ * (los que escribe la Fachada) igual salen con el traceId, porque el MDC se carga igual.
  */
 @Component
 public class RequestLoggingFilter extends OncePerRequestFilter {
@@ -55,13 +58,18 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         MDC.put("instanceId", instanceInfo.getInstanceId());
         MDC.put("requestId", UUID.randomUUID().toString().substring(0, 8));
         long start = System.currentTimeMillis();
-        log.info("--> {} {}", request.getMethod(), request.getRequestURI());
         try {
             chain.doFilter(request, response);
         } finally {
             long took = System.currentTimeMillis() - start;
-            log.info("<-- {} {} status={} took={}ms",
-                    request.getMethod(), request.getRequestURI(), response.getStatus(), took);
+            int status = response.getStatus();
+            if (status >= 500) {
+                log.error("{} {} status={} took={}ms",
+                        request.getMethod(), request.getRequestURI(), status, took);
+            } else if (status >= 400) {
+                log.warn("{} {} status={} took={}ms",
+                        request.getMethod(), request.getRequestURI(), status, took);
+            }
             MDC.clear();
         }
     }

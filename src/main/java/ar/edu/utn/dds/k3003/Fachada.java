@@ -167,6 +167,7 @@ public class Fachada implements FachadaLogistica {
 //    }
 
     public AsignacionDTO buscarAsignacionPorID(Integer id) throws NoSuchElementException {
+        log.info("Consulta de Asignacion realizado por ID con exito: asignacionID={}",id);
         Asignacion asignacion = asignacionRepo.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Asignacion no encontrada" + id));
 
@@ -174,6 +175,7 @@ public class Fachada implements FachadaLogistica {
     }
 
     public PaqueteDTO buscarPaquetePorID(Integer id) throws NoSuchElementException {
+        log.info("Consulta de Paquete realizada por ID con exito: donacionID={}",id);
         Paquete paquete = paqueteRepo.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Paquete no encontrado" + id));
 
