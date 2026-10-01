@@ -84,10 +84,10 @@ public class LogisticaWorker extends DefaultConsumer {
                 );
                 AsignacionDTO asignacionDTO = logisticaClient.asignarDesdeDonacion(donacion, elegida.getId(), elegida.getCantidadFaltante());
 
-                donadoresEntidadesClient.satisfacerNecesidad(
-                        elegida.getId(),
-                        asignacionDTO.cantidad()
-                );
+//                donadoresEntidadesClient.satisfacerNecesidad(
+//                        elegida.getId(),
+//                        asignacionDTO.cantidad()
+//                );
             }
             
 

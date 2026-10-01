@@ -610,10 +610,10 @@ public class Fachada implements FachadaLogistica {
                 EstadoDonacionEnum.ACEPTADA
         );
 
-//        donadoresYEntidadesClient.satisfacerNecesidad(
-//                asignacion.getNecesidadId(),
-//                asignacion.getCantidad()
-//        );
+        donadoresYEntidadesClient.satisfacerNecesidad(
+                asignacion.getNecesidadId(),
+                asignacion.getCantidad()
+        );
 
         asignacion.completada();
         asignacionRepo.save(asignacion);
