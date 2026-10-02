@@ -131,5 +131,30 @@ public class AsignacionController {
         }
     }
 
+
+    @PostMapping("/{asignacionId}")
+    public ResponseEntity<?> registrarEntrega (@PathVariable Integer asignacionId) {
+        // Este endpoint depende de los módulos (Donadores y Entidades) y Donaciones
+        // Como los módulos no están integrados,
+        // actualmente este endpoint requiere mocks/fakes para poder testearse.
+
+        try {
+
+            fachada.reportarEntrega(asignacionId);
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .build();
+
+        } catch (NoSuchElementException e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        }
+    }
+
+
+
 }
 
