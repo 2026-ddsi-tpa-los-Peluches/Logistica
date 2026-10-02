@@ -610,10 +610,14 @@ public class Fachada implements FachadaLogistica {
                 EstadoDonacionEnum.ACEPTADA
         );
 
-        donadoresYEntidadesClient.satisfacerNecesidad(
-                asignacion.getNecesidadId(),
-                asignacion.getCantidad()
-        );
+//        donadoresYEntidadesClient.satisfacerNecesidad(
+//                asignacion.getNecesidadId(),
+//                asignacion.getCantidad()
+//        );
+//el motivo por el cual se comenta este llamado es porque nuestra organizacion tiene el registro de que quedo asignado
+        // a que necesidad , entonces , como manejamos el microservicio de donadroesyentidades , y tambien el de logistica
+        //tenemos una columna "cantidad_Recibida" la cual almacena el valor de la cantidad asignada. y cuando realmente
+        //se entrega el pedido ahi recien se actualiza la donacion y la asignacion.
 
         asignacion.completada();
         asignacionRepo.save(asignacion);
