@@ -607,10 +607,14 @@ public class Fachada implements FachadaLogistica {
                     return new NoSuchElementException("Paquete no encontrado");
                 });
 
-        donacionesClient.cambiarEstadoDeDonacion(
-                paquete.getDonacionID(),
-                EstadoDonacionEnum.ACEPTADA
-        );
+        if(paquete.getCantidad() == 0)
+        {
+            donacionesClient.cambiarEstadoDeDonacion(
+                    paquete.getDonacionID(),
+                    EstadoDonacionEnum.ACEPTADA
+            );
+        }
+
 
 //        donadoresYEntidadesClient.satisfacerNecesidad(
 //                asignacion.getNecesidadId(),
