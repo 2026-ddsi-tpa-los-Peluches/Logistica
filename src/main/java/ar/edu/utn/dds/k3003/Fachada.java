@@ -242,7 +242,7 @@ public class Fachada implements FachadaLogistica {
 
                 channel.queueDeclare(queueName, false, false, false, null);
                 channel.basicPublish("", queueName, null, jsonPayload.getBytes(StandardCharsets.UTF_8));
-                log.debug("Mensaje publicado en la cola {}: {}", queueName, jsonPayload);
+                log.info("Mensaje publicado en la cola {}: {}", queueName, jsonPayload);
             }
         } catch (Exception e) {
             log.error("Error al publicar la donación en RabbitMQ", e);
