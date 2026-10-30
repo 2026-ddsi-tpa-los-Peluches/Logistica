@@ -74,6 +74,15 @@
       <optional>true</optional>
     </dependency>
 
+
+
+
+    <!--El conejo social -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-amqp</artifactId>
+    </dependency>
+
     <!-- Database -->
     <dependency>
       <groupId>com.h2database</groupId>
