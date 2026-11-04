@@ -5,11 +5,10 @@ import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.EstadoDonacionEnum;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.InsigniaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.MisionDTO;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.Arrays;
@@ -58,6 +57,37 @@ public class DonacionesClient {
                     "Error al cambiar estado de la donación",
                     e
             );
+        }
+    }
+
+    public DonacionDTO obtenerDonacionPorId(String donacionID) {
+        try {
+            // 1. Armamos la URL apuntando al endpoint GET del microservicio de donaciones
+            String url = baseUrl + "/donaciones/" + donacionID;
+
+            // 2. Configuramos los headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+
+            // 4. Ejecutamos la petición GET esperando un DonacionDTO de respuesta
+            ResponseEntity<DonacionDTO> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    DonacionDTO.class
+            );
+
+            // 5. Retornamos el body si la respuesta fue exitosa
+            return response.getBody();
+
+        } catch (HttpClientErrorException.NotFound e) {
+            // Manejo específico si el microservicio devuelve 404 Not Found
+            throw new NoSuchElementException("No se encontró la donación con ID: " + donacionID);
+        } catch (Exception e) {
+            // Manejo general de errores de red o del servidor remoto
+            throw new RuntimeException("Error al comunicarse con el microservicio de donaciones: " + e.getMessage(), e);
         }
     }
 }

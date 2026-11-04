@@ -1,7 +1,11 @@
 package ar.edu.utn.dds.k3003.publisher; // o tu paquete de servicios correspondiente
 
+import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionDTO;
+import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.EntidadBeneficaDTO;
+import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
 import ar.edu.utn.dds.k3003.events.AsignacionActualizadaEvent;
 import ar.edu.utn.dds.k3003.events.DepositoActualizadoEvent;
+import ar.edu.utn.dds.k3003.events.DonadorEvents.DonacionDonadorEntregadaEvent;
 import ar.edu.utn.dds.k3003.events.StockActualizadoEvent;
 import ar.edu.utn.dds.k3003.model.Asignacion;
 import ar.edu.utn.dds.k3003.model.Deposito;
@@ -16,9 +20,11 @@ import java.time.ZoneId;
 public class LogisticaPublisher {
 
     private final RabbitTemplate rabbitTemplate;
+    private final EventPublisher eventPublisher;
 
-    public LogisticaPublisher(RabbitTemplate rabbitTemplate) {
+    public LogisticaPublisher(RabbitTemplate rabbitTemplate, EventPublisher eventPublisher) {
         this.rabbitTemplate = rabbitTemplate;
+        this.eventPublisher = eventPublisher;
     }
 
     public void notificarAsignacion(Asignacion asignacion, String entidadIdAsociada, String donacionIdAsociada, String depositoIdAsociado) {
@@ -76,5 +82,17 @@ public class LogisticaPublisher {
 
         // Routing key exacta para stock que espera tu ConsultasListener ("consultas.stock")
         rabbitTemplate.convertAndSend("donatrack.eventos", "stock", evento);
+    }
+
+    public void notificarDonacionDonadorEntregada(Asignacion asignacion, Paquete paquete, DonacionDTO donacionDTO, NecesidadMaterialDTO necesidadMaterialDTO, EntidadBeneficaDTO entidadBeneficaDTO){
+        DonacionDonadorEntregadaEvent evento = new DonacionDonadorEntregadaEvent(
+                donacionDTO.donadorID(),
+                necesidadMaterialDTO.entidadID(),
+                entidadBeneficaDTO.razonSocial(),
+                paquete.getCantidad()
+        );
+
+        eventPublisher.publicar("donador-entidad-donada-exchange", evento);
+        System.out.println("Donación entregada enviada a RabbitMQ para donador: " + donacionDTO.donadorID());
     }
 }

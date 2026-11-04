@@ -1,14 +1,20 @@
 package ar.edu.utn.dds.k3003.componentes;
 
+import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.EntidadBeneficaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.InsigniaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.MisionDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.http.HttpHeaders;
 import java.util.*;
 
 @Slf4j
@@ -97,4 +103,24 @@ public class DonadoresYEntidadesClient {
             throw new RuntimeException("Error al consultar detalle de necesidad en DonadoresYEntidades", e);
         }
     }
+
+    // GET /entidades/{id}
+    public EntidadBeneficaDTO obtenerEntidadPorId(Integer entidadId) {
+        try {
+            String url = baseUrl + "/entidades/" + entidadId; // Ajustá la ruta base según el endpoint exacto que exponga el controller de tu compañero
+
+            return restTemplate.getForObject(
+                    url,
+                    EntidadBeneficaDTO.class
+            );
+
+        } catch (HttpClientErrorException.NotFound e) {
+            log.error("Error entidad no existente: entidadId={}", entidadId);
+            throw new NoSuchElementException("No se encontró la entidad benéfica con ID: " + entidadId);
+        } catch (Exception e) {
+            log.error("Error al consultar datos de entidad a donadoresYEntidades: entidadId={}", entidadId);
+            throw new RuntimeException("Error al consultar entidad en DonadoresYEntidades", e);
+        }
+    }
+
 }

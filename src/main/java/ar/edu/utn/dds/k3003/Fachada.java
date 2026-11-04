@@ -1,7 +1,9 @@
 package ar.edu.utn.dds.k3003;
 
+import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionMensajeDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.EstadoDonacionEnum;
+import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.EntidadBeneficaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.*;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
@@ -12,6 +14,7 @@ import ar.edu.utn.dds.k3003.events.DepositoActualizadoEvent;
 import ar.edu.utn.dds.k3003.events.StockActualizadoEvent;
 import ar.edu.utn.dds.k3003.model.*;
 import ar.edu.utn.dds.k3003.controllers.requests.AsignacionRequest;
+import ar.edu.utn.dds.k3003.publisher.LogisticaPublisher;
 import ar.edu.utn.dds.k3003.repositories.asignaciones.AsignacionesRepository;
 import ar.edu.utn.dds.k3003.repositories.depositos.DepositosRepository;
 import ar.edu.utn.dds.k3003.repositories.paquetes.PaquetesRepository;
@@ -63,6 +66,10 @@ public class Fachada implements FachadaLogistica {
     private final AsignacionesRepository asignacionRepo;
     private final PaquetesRepository paqueteRepo;
 
+
+    // PUBLISHERS
+    private final LogisticaPublisher logisticaPublisher;
+
     @Autowired
     public Fachada(
             MeterRegistry meterRegistry,
@@ -72,7 +79,8 @@ public class Fachada implements FachadaLogistica {
             AsignacionesRepository asignacionRepo,
             PaquetesRepository paqueteRepo,
             ApplicationEventPublisher publicadorSpring,
-            RabbitTemplate rabbitTemplate
+            RabbitTemplate rabbitTemplate,
+            LogisticaPublisher logisticaPublisher
 
     ) {
         this.depositosCreadosCounter = Counter.builder("deposito.creados")
@@ -117,6 +125,8 @@ public class Fachada implements FachadaLogistica {
 
         this.publicadorSpring = publicadorSpring;
         this.rabbitTemplate = rabbitTemplate;
+
+        this.logisticaPublisher = logisticaPublisher;
     }
 
     @Override
@@ -743,6 +753,21 @@ public class Fachada implements FachadaLogistica {
 
         asignacion.completada();
         asignacionRepo.save(asignacion);
+
+
+        // se junta la banda
+        DonacionDTO donacionDTO = donacionesClient.obtenerDonacionPorId(paquete.getDonacionID());
+        NecesidadMaterialDTO necesidadMaterialDTO = donadoresYEntidadesClient.obtenerNecesidadPorId(asignacion.getNecesidadId());
+        EntidadBeneficaDTO entidadBeneficaDTO = donadoresYEntidadesClient.obtenerEntidadPorId(Integer.valueOf(necesidadMaterialDTO.entidadID()));
+
+        // envio conejo chocolat
+        logisticaPublisher.notificarDonacionDonadorEntregada(
+                asignacion,
+                paquete,
+                donacionDTO,
+                necesidadMaterialDTO,
+                entidadBeneficaDTO
+        );
 
         log.info("Entrega reportada: asignacionID={}, donacionID={}", asignacionId, paquete.getDonacionID());
     }
