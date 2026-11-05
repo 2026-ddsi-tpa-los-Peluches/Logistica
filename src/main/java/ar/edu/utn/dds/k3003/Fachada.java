@@ -479,6 +479,8 @@ public class Fachada implements FachadaLogistica {
 
         Asignacion asignacionConId = asignacionRepo.save(asignacion);
 
+
+
         // --- PUBLICAR EVENTO DE ASIGNACIÓN A RABBITMQ ---
         AsignacionActualizadaEvent eventoAsignacion = new AsignacionActualizadaEvent(
                 String.valueOf(asignacionConId.getId()),
@@ -554,6 +556,9 @@ public class Fachada implements FachadaLogistica {
         );
 
         Asignacion asignacionConId = asignacionRepo.save(asignacion);
+        logisticaPublisher.notificarNecesidadAsignacionPendiente(asignacionConId, depositoElegido, cantidadAAsignar);
+
+
 
         // --- PUBLICAR EVENTO DE ASIGNACIÓN A RABBITMQ ---
         AsignacionActualizadaEvent eventoAsignacion = new AsignacionActualizadaEvent(

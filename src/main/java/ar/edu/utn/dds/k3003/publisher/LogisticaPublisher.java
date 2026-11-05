@@ -6,6 +6,7 @@ import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDT
 import ar.edu.utn.dds.k3003.events.AsignacionActualizadaEvent;
 import ar.edu.utn.dds.k3003.events.DepositoActualizadoEvent;
 import ar.edu.utn.dds.k3003.events.DonadorEvents.DonacionDonadorEntregadaEvent;
+import ar.edu.utn.dds.k3003.events.NecesidadAsignacionPendiente;
 import ar.edu.utn.dds.k3003.events.StockActualizadoEvent;
 import ar.edu.utn.dds.k3003.model.Asignacion;
 import ar.edu.utn.dds.k3003.model.Deposito;
@@ -92,7 +93,18 @@ public class LogisticaPublisher {
                 paquete.getCantidad()
         );
 
-        eventPublisher.publicar("donador-entidad-donada-exchange", evento);
+        eventPublisher.publicar("donador-entidad-donada", evento);
         System.out.println("Donación entregada enviada a RabbitMQ para donador: " + donacionDTO.donadorID());
+    }
+
+    public void notificarNecesidadAsignacionPendiente(Asignacion asignacion, Deposito deposito, int cantidadAAsignar){
+
+        NecesidadAsignacionPendiente evento = new NecesidadAsignacionPendiente(
+                String.valueOf(asignacion.getId()),
+                asignacion.getNecesidadId(),
+                String.valueOf(deposito.getId()),
+                cantidadAAsignar
+        );
+        eventPublisher.publicar("necesidad-asignacion-pendiente", evento);
     }
 }
