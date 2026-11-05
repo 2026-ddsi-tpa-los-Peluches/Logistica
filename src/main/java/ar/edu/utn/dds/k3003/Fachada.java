@@ -760,6 +760,10 @@ public class Fachada implements FachadaLogistica {
         asignacionRepo.save(asignacion);
 
 
+        // llamo a rabbiol
+        logisticaPublisher.notificarNecesidadAsignacionHecha(asignacion);
+
+
         // se junta la banda
         DonacionDTO donacionDTO = donacionesClient.obtenerDonacionPorId(paquete.getDonacionID());
         NecesidadMaterialDTO necesidadMaterialDTO = donadoresYEntidadesClient.obtenerNecesidadPorId(asignacion.getNecesidadId());

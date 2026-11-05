@@ -3,11 +3,8 @@ package ar.edu.utn.dds.k3003.publisher; // o tu paquete de servicios correspondi
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.EntidadBeneficaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
-import ar.edu.utn.dds.k3003.events.AsignacionActualizadaEvent;
-import ar.edu.utn.dds.k3003.events.DepositoActualizadoEvent;
+import ar.edu.utn.dds.k3003.events.*;
 import ar.edu.utn.dds.k3003.events.DonadorEvents.DonacionDonadorEntregadaEvent;
-import ar.edu.utn.dds.k3003.events.NecesidadAsignacionPendiente;
-import ar.edu.utn.dds.k3003.events.StockActualizadoEvent;
 import ar.edu.utn.dds.k3003.model.Asignacion;
 import ar.edu.utn.dds.k3003.model.Deposito;
 import ar.edu.utn.dds.k3003.model.Paquete;
@@ -106,5 +103,16 @@ public class LogisticaPublisher {
                 cantidadAAsignar
         );
         eventPublisher.publicar("necesidad-asignacion-pendiente", evento);
+        System.out.println("Asignación pendiente enviada a RabbitMQ para agregar a pendientes: " + asignacion.getId());
+    }
+
+    public void notificarNecesidadAsignacionHecha(Asignacion asignacion) {
+        NecesidadAsignacionHecha evento = new NecesidadAsignacionHecha(
+                String.valueOf(asignacion.getId()),
+                asignacion.getNecesidadId()
+        );
+
+        eventPublisher.publicar("necesidad-asignacion-hecha", evento);
+        System.out.println("Asignación completada enviada a RabbitMQ para remover de pendientes: " + asignacion.getId());
     }
 }
