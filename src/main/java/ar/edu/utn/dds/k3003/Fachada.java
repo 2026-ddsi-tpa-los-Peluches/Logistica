@@ -9,9 +9,9 @@ import ar.edu.utn.dds.k3003.catedra.dtos.logistica.*;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
 import ar.edu.utn.dds.k3003.componentes.DonacionesClient;
 import ar.edu.utn.dds.k3003.componentes.DonadoresYEntidadesClient;
-import ar.edu.utn.dds.k3003.events.AsignacionActualizadaEvent;
-import ar.edu.utn.dds.k3003.events.DepositoActualizadoEvent;
-import ar.edu.utn.dds.k3003.events.StockActualizadoEvent;
+import ar.edu.utn.dds.k3003.events.asignacionEvents.AsignacionActualizadaEvent;
+import ar.edu.utn.dds.k3003.events.depositoEvents.DepositoActualizadoEvent;
+import ar.edu.utn.dds.k3003.events.stockEvents.StockActualizadoEvent;
 import ar.edu.utn.dds.k3003.model.*;
 import ar.edu.utn.dds.k3003.controllers.requests.AsignacionRequest;
 import ar.edu.utn.dds.k3003.publisher.LogisticaPublisher;
@@ -308,6 +308,12 @@ public class Fachada implements FachadaLogistica {
 
         deposito.agregarPaquete(paquete);
         depositoRepo.save(deposito);
+
+
+        // aviso al repartidor de chocolate
+        logisticaPublisher.notificarStockProductoModificado(paquete, deposito);
+
+
         // --- PUBLICAR EVENTO DE STOCK A RABBITMQ ---
         // Buscamos el paquete recién agregado para tener su ID si corresponde, o mandamos el evento de stock actualizado
         for (Paquete p : deposito.getStockActual()) {

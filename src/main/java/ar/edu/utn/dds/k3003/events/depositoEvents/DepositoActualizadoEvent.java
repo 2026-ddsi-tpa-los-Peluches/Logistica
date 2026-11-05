@@ -1,4 +1,4 @@
-package ar.edu.utn.dds.k3003.events;
+package ar.edu.utn.dds.k3003.events.depositoEvents;
 
 
 import java.time.Instant;
