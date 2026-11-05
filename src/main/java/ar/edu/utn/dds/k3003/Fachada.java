@@ -10,10 +10,10 @@ import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
 import ar.edu.utn.dds.k3003.componentes.DonacionesClient;
 import ar.edu.utn.dds.k3003.componentes.DonadoresYEntidadesClient;
 import ar.edu.utn.dds.k3003.events.asignacionEvents.AsignacionActualizadaEvent;
-import ar.edu.utn.dds.k3003.events.depositoEvents.DepositoActualizadoEvent;
 import ar.edu.utn.dds.k3003.events.stockEvents.StockActualizadoEvent;
 import ar.edu.utn.dds.k3003.model.*;
 import ar.edu.utn.dds.k3003.controllers.requests.AsignacionRequest;
+import ar.edu.utn.dds.k3003.publisher.DepositosPublisher;
 import ar.edu.utn.dds.k3003.publisher.LogisticaPublisher;
 import ar.edu.utn.dds.k3003.repositories.asignaciones.AsignacionesRepository;
 import ar.edu.utn.dds.k3003.repositories.depositos.DepositosRepository;
@@ -69,6 +69,7 @@ public class Fachada implements FachadaLogistica {
 
     // PUBLISHERS
     private final LogisticaPublisher logisticaPublisher;
+    private final DepositosPublisher depositosPublisher;
 
     @Autowired
     public Fachada(
@@ -80,7 +81,8 @@ public class Fachada implements FachadaLogistica {
             PaquetesRepository paqueteRepo,
             ApplicationEventPublisher publicadorSpring,
             RabbitTemplate rabbitTemplate,
-            LogisticaPublisher logisticaPublisher
+            LogisticaPublisher logisticaPublisher,
+            DepositosPublisher depositosPublisher
 
     ) {
         this.depositosCreadosCounter = Counter.builder("deposito.creados")
@@ -127,6 +129,7 @@ public class Fachada implements FachadaLogistica {
         this.rabbitTemplate = rabbitTemplate;
 
         this.logisticaPublisher = logisticaPublisher;
+        this.depositosPublisher = depositosPublisher;
     }
 
     @Override
@@ -147,16 +150,9 @@ public class Fachada implements FachadaLogistica {
         this.depositosCreadosCounter.increment();
 
         Deposito depositoConId = depositoRepo.save(deposito);
-        // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-                String.valueOf(depositoConId.getId()),
-                depositoConId.getNombre(),
-                depositoConId.getCapacidadMaxima(),
-                depositoConId.getTipoAlgoritmo() != null ? depositoConId.getTipoAlgoritmo().name() : "DEFAULT",
-                Instant.now()
-        );
-        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
-        // -------------------------------------------------------------
+
+        depositosPublisher.notificarDepositoCreado(depositoConId);
+
         log.info("Depósito creado: id={}, nombre={}, capacidadMaxima={}",
                 depositoConId.getId(), depositoDTO.nombre(), depositoDTO.capacidadMaxima());
 
@@ -189,6 +185,8 @@ public class Fachada implements FachadaLogistica {
                 });
 
         depositoRepo.delete(deposito);
+
+        depositosPublisher.notificarDepositoEliminado(id);
 
         log.info("Depósito eliminado: id={}", id);
     }
@@ -520,14 +518,14 @@ public class Fachada implements FachadaLogistica {
             deposito.agregarPaquete(paqueStock);
             depositoRepo.save(deposito);
             // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-            DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-                    String.valueOf(deposito.getId()),
-                    deposito.getNombre(),
-                    deposito.getCapacidadMaxima(),
-                    deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
-                    Instant.now()
-            );
-            rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
+//            DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
+//                    String.valueOf(deposito.getId()),
+//                    deposito.getNombre(),
+//                    deposito.getCapacidadMaxima(),
+//                    deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
+//                    Instant.now()
+//            );
+//            rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
 
 
             // --- REGISTRO DE MÉTRICA 1 ---
@@ -598,15 +596,15 @@ public class Fachada implements FachadaLogistica {
         depositoElegido.setCapacidadRestante(depositoElegido.getCapacidadRestante() + cantidadAAsignar);
         depositoRepo.save(depositoElegido);
         // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-                String.valueOf(depositoElegido.getId()),
-                depositoElegido.getNombre(),
-                depositoElegido.getCapacidadMaxima(),
-                depositoElegido.getTipoAlgoritmo() != null ? depositoElegido.getTipoAlgoritmo().name() : "DEFAULT",
-                Instant.now()
-        );
-        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
-
+//        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
+//                String.valueOf(depositoElegido.getId()),
+//                depositoElegido.getNombre(),
+//                depositoElegido.getCapacidadMaxima(),
+//                depositoElegido.getTipoAlgoritmo() != null ? depositoElegido.getTipoAlgoritmo().name() : "DEFAULT",
+//                Instant.now()
+//        );
+//        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
+//
 
 
         logisticaPublisher.notificarStockProductoModificado(paqueteElegido, depositoElegido, cantidadAAsignar);
@@ -657,14 +655,14 @@ public class Fachada implements FachadaLogistica {
         deposito.setTipoAlgoritmo(algoritmo);
         depositoRepo.save(deposito);
         // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-                String.valueOf(deposito.getId()),
-                deposito.getNombre(),
-                deposito.getCapacidadMaxima(),
-                deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
-                Instant.now()
-        );
-        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
+//        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
+//                String.valueOf(deposito.getId()),
+//                deposito.getNombre(),
+//                deposito.getCapacidadMaxima(),
+//                deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
+//                Instant.now()
+//        );
+//        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
 
 
         log.info("Algoritmo de depósito cambiado: depositoID={}, algoritmo={}", depositoId, algoritmo);
@@ -683,14 +681,14 @@ public class Fachada implements FachadaLogistica {
         deposito.setTipoAlgoritmo(tipoAlgoritmo);
         depositoRepo.save(deposito);
         // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-                String.valueOf(deposito.getId()),
-                deposito.getNombre(),
-                deposito.getCapacidadMaxima(),
-                deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
-                Instant.now()
-        );
-        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
+//        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
+//                String.valueOf(deposito.getId()),
+//                deposito.getNombre(),
+//                deposito.getCapacidadMaxima(),
+//                deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
+//                Instant.now()
+//        );
+//        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
 
         log.info("Algoritmo de depósito cambiado: depositoID={}, algoritmo={}", depositoID, tipoAlgoritmo);
     }
