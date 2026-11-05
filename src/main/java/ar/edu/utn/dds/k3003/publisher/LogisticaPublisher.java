@@ -124,12 +124,12 @@ public class LogisticaPublisher {
 
     // STOCK
 
-    public void notificarStockProductoModificado(Paquete paquete, Deposito deposito) {
+    public void notificarStockProductoModificado(Paquete paquete, Deposito deposito, int cantidadAAsignar) {
         StockProductoModificadoEvent evento = new StockProductoModificadoEvent(
                 paquete.getProductoID(),
                 String.valueOf(deposito.getId()),
                 deposito.getNombre(),
-                paquete.getCantidad()
+                cantidadAAsignar
         );
 
         eventPublisher.publicar("producto-stock-modificado", evento);

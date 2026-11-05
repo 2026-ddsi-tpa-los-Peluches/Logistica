@@ -311,7 +311,7 @@ public class Fachada implements FachadaLogistica {
 
 
         // aviso al repartidor de chocolate
-        logisticaPublisher.notificarStockProductoModificado(paquete, deposito);
+        logisticaPublisher.notificarStockProductoModificado(paquete, deposito, cantidadDonada);
 
 
         // --- PUBLICAR EVENTO DE STOCK A RABBITMQ ---
@@ -589,7 +589,11 @@ public class Fachada implements FachadaLogistica {
         this.tamanioAsignacionSummary.record(cantidadAAsignar);
 
 
+
+
         paqueteElegido.restarCantidad(cantidadAAsignar);
+
+
 
         depositoElegido.setCapacidadRestante(depositoElegido.getCapacidadRestante() + cantidadAAsignar);
         depositoRepo.save(depositoElegido);
@@ -602,6 +606,10 @@ public class Fachada implements FachadaLogistica {
                 Instant.now()
         );
         rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
+
+
+
+        logisticaPublisher.notificarStockProductoModificado(paqueteElegido, depositoElegido, cantidadAAsignar);
 
 
         log.info("Producto asignado a entidad: necesidadID={}, productoID={}, cantidad={}, depositoID={}, origen={}",
