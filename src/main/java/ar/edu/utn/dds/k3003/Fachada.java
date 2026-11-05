@@ -308,6 +308,9 @@ public class Fachada implements FachadaLogistica {
         deposito.agregarPaquete(paquete);
         depositoRepo.save(deposito);
 
+        DonacionDTO donacionDTO = donacionesClient.obtenerDonacionPorId(donacionID);
+        depositosPublisher.notificarDonacionIngresada(depositoID, donacionID, donacionDTO.donadorID(), cantidadDonada);
+
         depositosPublisher.notificarPaqueteAgregado(depositoID, paquete);
 
         // aviso al repartidor de chocolate
@@ -467,6 +470,11 @@ public class Fachada implements FachadaLogistica {
         );
 
         Asignacion asignacionConId = asignacionRepo.save(asignacion);
+
+        DonacionDTO donacionDTO = donacionesClient.obtenerDonacionPorId(donacionID);
+
+        depositosPublisher.notificarDonacionIngresada(deposito.getId(), donacionID, donacionDTO.donadorID(), cantidadAAsignar );
+
 
         depositosPublisher.notificarAsignacionEstado(deposito.getId(), "ASIGNADA");
 
@@ -749,6 +757,8 @@ public class Fachada implements FachadaLogistica {
 
         asignacion.completada();
         asignacionRepo.save(asignacion);
+
+        depositosPublisher.notificarDonacionEntregada(paquete.getDepositoID(), paquete.getDonacionID());
 
         depositosPublisher.notificarAsignacionEstado(paquete.getDepositoID(), "ASIGNADA");
 

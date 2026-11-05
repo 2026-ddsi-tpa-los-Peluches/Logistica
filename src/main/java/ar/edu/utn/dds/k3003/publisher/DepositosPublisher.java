@@ -99,4 +99,26 @@ public class DepositosPublisher {
         eventPublisher.publicar("deposito-cantidad-asignacion-estado", evento);
         System.out.println("Evento de estado de asignación (" + estado + ") enviado a RabbitMQ para depósito ID: " + depositoId);
     }
+
+    public void notificarDonacionIngresada(Integer depositoId, String donacionId, String donadorId, int cantidad) {
+        DepositoDonacionIngresadaEvent evento = new DepositoDonacionIngresadaEvent(
+                String.valueOf(depositoId),
+                donacionId,
+                donadorId,
+                cantidad,
+                Instant.now()
+        );
+        eventPublisher.publicar("deposito-donacion-ingresada", evento);
+        System.out.println("Donación ingresada al depósito enviada a RabbitMQ ID: " + donacionId);
+    }
+
+    public void notificarDonacionEntregada(Integer depositoId, String donacionId) {
+        DepositoDonacionEntregadaEvent evento = new DepositoDonacionEntregadaEvent(
+                String.valueOf(depositoId),
+                donacionId,
+                Instant.now()
+        );
+        eventPublisher.publicar("deposito-donacion-entregada", evento);
+        System.out.println("Donación entregada del depósito enviada a RabbitMQ ID: " + donacionId);
+    }
 }
