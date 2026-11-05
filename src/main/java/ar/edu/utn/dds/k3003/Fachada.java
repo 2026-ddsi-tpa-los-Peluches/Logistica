@@ -546,6 +546,10 @@ public class Fachada implements FachadaLogistica {
         Asignacion asignacionConId = asignacionRepo.save(asignacion);
         logisticaPublisher.notificarNecesidadAsignacionPendiente(asignacionConId, depositoElegido, cantidadAAsignar);
 
+        EntidadBeneficaDTO entidad = donadoresYEntidadesClient.obtenerEntidadPorId(Integer.valueOf(necesidad.entidadID()));
+
+        depositosPublisher.notificarEntidadAtendida(depositoElegido.getId(), necesidad, cantidadAAsignar, entidad );
+
 
 
         // --- PUBLICAR EVENTO DE ASIGNACIÓN A RABBITMQ ---

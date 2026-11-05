@@ -1,5 +1,7 @@
 package ar.edu.utn.dds.k3003.publisher;
 
+import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.EntidadBeneficaDTO;
+import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
 import ar.edu.utn.dds.k3003.events.depositoEvents.*;
 import ar.edu.utn.dds.k3003.model.Deposito;
@@ -74,6 +76,18 @@ public class DepositosPublisher {
 
         eventPublisher.publicar("deposito-paquete-actualizado", evento);
         System.out.println("Stock de paquete actualizado enviado a RabbitMQ ID: " + paquete.getId());
+    }
+
+    public void notificarEntidadAtendida(Integer depositoId, NecesidadMaterialDTO necesidad, int unidadesAsignadas, EntidadBeneficaDTO entidadBeneficaDTO) {
+        DepositoEntidadAtendidaEvent evento = new DepositoEntidadAtendidaEvent(
+                String.valueOf(depositoId),
+                necesidad.entidadID(),
+                entidadBeneficaDTO.razonSocial(),
+                unidadesAsignadas
+        );
+
+        eventPublisher.publicar("deposito-entidad-atendida", evento);
+        System.out.println("Evento de entidad atendida enviado a RabbitMQ para depósito ID: " + depositoId);
     }
 
 }
