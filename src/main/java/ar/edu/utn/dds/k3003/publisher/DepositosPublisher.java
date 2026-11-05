@@ -1,5 +1,7 @@
 package ar.edu.utn.dds.k3003.publisher;
 
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
+import ar.edu.utn.dds.k3003.events.depositoEvents.DepositoAlgoritmoActualizadoEvent;
 import ar.edu.utn.dds.k3003.events.depositoEvents.DepositoCreadoEvent;
 import ar.edu.utn.dds.k3003.events.depositoEvents.DepositoEliminadoEvent;
 import ar.edu.utn.dds.k3003.model.Deposito;
@@ -39,6 +41,15 @@ public class DepositosPublisher {
         System.out.println("Depósito eliminado enviado a RabbitMQ ID: " + depositoId);
     }
 
+    public void notificarAlgoritmoCambiado(Integer depositoId, TipoAlgoritmoEnum algoritmo) {
+        String algoritmoStr = algoritmo != null ? algoritmo.toString() : "DEFAULT";
 
+        DepositoAlgoritmoActualizadoEvent evento = new DepositoAlgoritmoActualizadoEvent(
+                String.valueOf(depositoId),
+                algoritmoStr
+        );
 
+        eventPublisher.publicar("deposito-algoritmo-actualizado", evento);
+        System.out.println("Algoritmo de depósito actualizado enviado a RabbitMQ ID: " + depositoId);
     }
+}

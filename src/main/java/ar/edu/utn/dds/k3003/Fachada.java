@@ -654,16 +654,8 @@ public class Fachada implements FachadaLogistica {
 
         deposito.setTipoAlgoritmo(algoritmo);
         depositoRepo.save(deposito);
-        // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-//        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-//                String.valueOf(deposito.getId()),
-//                deposito.getNombre(),
-//                deposito.getCapacidadMaxima(),
-//                deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
-//                Instant.now()
-//        );
-//        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
 
+        depositosPublisher.notificarAlgoritmoCambiado(depositoId, algoritmo);
 
         log.info("Algoritmo de depósito cambiado: depositoID={}, algoritmo={}", depositoId, algoritmo);
 
