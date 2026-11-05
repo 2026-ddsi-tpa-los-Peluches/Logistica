@@ -307,26 +307,10 @@ public class Fachada implements FachadaLogistica {
         deposito.agregarPaquete(paquete);
         depositoRepo.save(deposito);
 
+        depositosPublisher.notificarPaqueteAgregado(depositoID, paquete);
 
         // aviso al repartidor de chocolate
         logisticaPublisher.notificarStockProductoModificado(paquete, deposito, cantidadDonada);
-
-
-        // --- PUBLICAR EVENTO DE STOCK A RABBITMQ ---
-        // Buscamos el paquete recién agregado para tener su ID si corresponde, o mandamos el evento de stock actualizado
-        for (Paquete p : deposito.getStockActual()) {
-            if (p.getDonacionID() != null && p.getDonacionID().equals(donacionID) && p.getProductoID().equals(productoID)) {
-                StockActualizadoEvent eventoStock = new StockActualizadoEvent(
-                        p.getProductoID(),
-                        String.valueOf(deposito.getId()),
-                        deposito.getNombre(),
-                        p.getCantidad(),
-                        Instant.now()
-                );
-                rabbitTemplate.convertAndSend("donatrack.eventos", "stock", eventoStock);
-                break;
-            }
-        }
         // ------------------------------------------
 
         // --- REGISTRO DE MÉTRICA 1: Nuevo paquete creado en stock ---
@@ -595,17 +579,8 @@ public class Fachada implements FachadaLogistica {
 
         depositoElegido.setCapacidadRestante(depositoElegido.getCapacidadRestante() + cantidadAAsignar);
         depositoRepo.save(depositoElegido);
-        // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-//        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-//                String.valueOf(depositoElegido.getId()),
-//                depositoElegido.getNombre(),
-//                depositoElegido.getCapacidadMaxima(),
-//                depositoElegido.getTipoAlgoritmo() != null ? depositoElegido.getTipoAlgoritmo().name() : "DEFAULT",
-//                Instant.now()
-//        );
-//        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
-//
 
+        depositosPublisher.notificarPaqueteStockActualizado(depositoElegido.getId(), paqueteElegido, cantidadAAsignar);
 
         logisticaPublisher.notificarStockProductoModificado(paqueteElegido, depositoElegido, cantidadAAsignar);
 

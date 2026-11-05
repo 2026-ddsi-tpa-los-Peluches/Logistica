@@ -62,31 +62,6 @@ public class LogisticaPublisher {
         rabbitTemplate.convertAndSend("donatrack.eventos", "asignacion", evento);
     }
 
-    public void notificarDeposito(Deposito deposito) {
-        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-                String.valueOf(deposito.getId()),
-                deposito.getNombre(),
-                deposito.getCapacidadMaxima(),
-                deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
-                Instant.now()
-        );
-
-        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
-    }
-
-    public void notificarStock(Deposito deposito, Paquete paquete) {
-        StockActualizadoEvent evento = new StockActualizadoEvent(
-                paquete.getProductoID(),
-                String.valueOf(deposito.getId()),
-                deposito.getNombre(),
-                paquete.getCantidad(),
-                Instant.now()
-        );
-
-        // Routing key exacta para stock que espera tu ConsultasListener ("consultas.stock")
-        rabbitTemplate.convertAndSend("donatrack.eventos", "stock", evento);
-    }
-
     public void notificarDonacionDonadorEntregada(Asignacion asignacion, Paquete paquete, DonacionDTO donacionDTO, NecesidadMaterialDTO necesidadMaterialDTO, EntidadBeneficaDTO entidadBeneficaDTO){
         DonacionDonadorEntregadaEvent evento = new DonacionDonadorEntregadaEvent(
                 donacionDTO.donadorID(),

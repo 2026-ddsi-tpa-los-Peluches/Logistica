@@ -1,10 +1,9 @@
 package ar.edu.utn.dds.k3003.publisher;
 
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
-import ar.edu.utn.dds.k3003.events.depositoEvents.DepositoAlgoritmoActualizadoEvent;
-import ar.edu.utn.dds.k3003.events.depositoEvents.DepositoCreadoEvent;
-import ar.edu.utn.dds.k3003.events.depositoEvents.DepositoEliminadoEvent;
+import ar.edu.utn.dds.k3003.events.depositoEvents.*;
 import ar.edu.utn.dds.k3003.model.Deposito;
+import ar.edu.utn.dds.k3003.model.Paquete;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
@@ -52,4 +51,29 @@ public class DepositosPublisher {
         eventPublisher.publicar("deposito-algoritmo-actualizado", evento);
         System.out.println("Algoritmo de depósito actualizado enviado a RabbitMQ ID: " + depositoId);
     }
+
+    public void notificarPaqueteAgregado(Integer depositoId, Paquete paquete) {
+        DepositoPaqueteAgregadoEvent evento = new DepositoPaqueteAgregadoEvent(
+                String.valueOf(depositoId),
+                String.valueOf(paquete.getId()),
+                paquete.getDonacionID(),
+                paquete.getProductoID(),
+                paquete.getCantidad()
+        );
+        eventPublisher.publicar("deposito-paquete-agregado", evento);
+        System.out.println("Paquete agregado al stock del depósito enviado a RabbitMQ ID: " + paquete.getId());
+    }
+
+    public void notificarPaqueteStockActualizado(Integer depositoId, Paquete paquete, int cantidadDescontada) {
+        DepositoPaqueteStockActualizadoEvent evento = new DepositoPaqueteStockActualizadoEvent(
+                String.valueOf(depositoId),
+                String.valueOf(paquete.getId()),
+                paquete.getCantidad(), // La cantidad que le quedó al paquete en Postgres
+                cantidadDescontada     // Lo que se descontó
+        );
+
+        eventPublisher.publicar("deposito-paquete-actualizado", evento);
+        System.out.println("Stock de paquete actualizado enviado a RabbitMQ ID: " + paquete.getId());
+    }
+
 }
