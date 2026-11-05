@@ -301,7 +301,8 @@ public class Fachada implements FachadaLogistica {
         Paquete paquete = new Paquete(
                 donacionID,
                 productoID,
-                cantidadDonada
+                cantidadDonada,
+                depositoID
         );
 
         deposito.agregarPaquete(paquete);
@@ -467,6 +468,8 @@ public class Fachada implements FachadaLogistica {
 
         Asignacion asignacionConId = asignacionRepo.save(asignacion);
 
+        depositosPublisher.notificarAsignacionEstado(deposito.getId(), "ASIGNADA");
+
 
 
         // --- PUBLICAR EVENTO DE ASIGNACIÓN A RABBITMQ ---
@@ -496,7 +499,8 @@ public class Fachada implements FachadaLogistica {
             Paquete paqueStock = new Paquete(
                     donacionID,
                     productoID,
-                    cantidadSobrante
+                    cantidadSobrante,
+                    paquete.getDepositoID()
             );
 
             deposito.agregarPaquete(paqueStock);
@@ -544,6 +548,9 @@ public class Fachada implements FachadaLogistica {
         );
 
         Asignacion asignacionConId = asignacionRepo.save(asignacion);
+
+        depositosPublisher.notificarAsignacionEstado(depositoElegido.getId(), "ASIGNADA");
+
         logisticaPublisher.notificarNecesidadAsignacionPendiente(asignacionConId, depositoElegido, cantidadAAsignar);
 
         EntidadBeneficaDTO entidad = donadoresYEntidadesClient.obtenerEntidadPorId(Integer.valueOf(necesidad.entidadID()));
@@ -609,7 +616,8 @@ public class Fachada implements FachadaLogistica {
         Paquete paquete = new Paquete(
                 request.donacionID(),
                 request.productoID(),
-                cantidadAAsignar
+                cantidadAAsignar,
+                deposito.getId()
         );
 
         return AsignarPaquete(paquete, deposito, request.necesidadID(), request.cantidad(), cantidadAAsignar, request.donacionID(), request.productoID()
@@ -742,6 +750,8 @@ public class Fachada implements FachadaLogistica {
         asignacion.completada();
         asignacionRepo.save(asignacion);
 
+        depositosPublisher.notificarAsignacionEstado(paquete.getDepositoID(), "ASIGNADA");
+
 
         // llamo a rabbiol
         logisticaPublisher.notificarNecesidadAsignacionHecha(asignacion);
@@ -822,13 +832,7 @@ public class Fachada implements FachadaLogistica {
         );
     }
 
-    private Paquete toDomain(PaqueteDTO dto) {
-        return new Paquete(
-                dto.donacionID(),
-                dto.producto(),
-                dto.cantidad()
-        );
-    }
+
 
     private NecesidadLogistica toDomain(NecesidadMaterialDTO dto){
         return new NecesidadLogistica(

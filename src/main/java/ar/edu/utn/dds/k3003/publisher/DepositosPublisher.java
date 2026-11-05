@@ -90,4 +90,13 @@ public class DepositosPublisher {
         System.out.println("Evento de entidad atendida enviado a RabbitMQ para depósito ID: " + depositoId);
     }
 
+    public void notificarAsignacionEstado(Integer depositoId, String estado) {
+        DepositoCantidadAsignacionEstadoEvent evento = new DepositoCantidadAsignacionEstadoEvent(
+                String.valueOf(depositoId),
+                estado
+        );
+
+        eventPublisher.publicar("deposito-cantidad-asignacion-estado", evento);
+        System.out.println("Evento de estado de asignación (" + estado + ") enviado a RabbitMQ para depósito ID: " + depositoId);
+    }
 }
