@@ -455,12 +455,10 @@ public class Fachada implements FachadaLogistica {
             Paquete paquete,
             Deposito deposito,
             String necesidadID,
-            int cantidadTotal,
             int cantidadAAsignar,
             String donacionID,
             String productoID
     ){
-//        Paquete paqueteGuardado = (paquete.getId() == null) ? paqueteRepo.save(paquete) : paquete;
 
         Asignacion asignacion = new Asignacion(
                 paquete.getId(),
@@ -491,26 +489,9 @@ public class Fachada implements FachadaLogistica {
         this.asignacionesMatchmakingCounter.increment();
         this.tamanioAsignacionSummary.record(cantidadAAsignar);
 
-        int cantidadSobrante = cantidadTotal - cantidadAAsignar;
-        if(cantidadSobrante > 0){
-            Paquete paqueteStock = new Paquete(
-                    donacionID,
-                    productoID,
-                    cantidadSobrante,
-                    paquete.getDepositoID()
-            );
 
-            deposito.agregarPaquete(paqueteStock);
-            depositoRepo.save(deposito);
-
-            depositosPublisher.notificarPaqueteAgregado(deposito.getId(), paqueteStock);
-
-            // --- REGISTRO DE MÉTRICA 1 ---
-            this.paquetesCreadosCounter.increment();
-        }
-
-        log.info("Asignación creada (matchmaking): id={}, paqueteID={}, necesidadID={}, cantidad={}, sobrante={}",
-                asignacionConId.getId(), asignacionConId.getPaqueteId(), necesidadID, cantidadAAsignar, cantidadSobrante);
+        log.info("Asignación creada (matchmaking): id={}, paqueteID={}, necesidadID={}, cantidad={}",
+                asignacionConId.getId(), asignacionConId.getPaqueteId(), necesidadID, cantidadAAsignar);
 
         return toDTO(asignacionConId);
     }
@@ -594,10 +575,12 @@ public class Fachada implements FachadaLogistica {
 
         int cantidadAAsignar = cuantoAsignar(request.cantidadNecesitada(), request.cantidad());
 
+
+
         Paquete paquete = new Paquete(
                 request.donacionID(),
                 request.productoID(),
-                cantidadAAsignar,
+                request.cantidad() - cantidadAAsignar,
                 deposito.getId()
         );
 
