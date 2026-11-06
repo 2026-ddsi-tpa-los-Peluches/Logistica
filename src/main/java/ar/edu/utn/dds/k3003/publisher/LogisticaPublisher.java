@@ -5,7 +5,6 @@ import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.EntidadBeneficaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
 import ar.edu.utn.dds.k3003.events.asignacionEvents.AsignacionActualizadaEvent;
 import ar.edu.utn.dds.k3003.events.donadorEvents.DonacionDonadorEntregadaEvent;
-import ar.edu.utn.dds.k3003.events.depositoEvents.DepositoActualizadoEvent;
 import ar.edu.utn.dds.k3003.events.necesidadEvents.NecesidadAsignacionHecha;
 import ar.edu.utn.dds.k3003.events.necesidadEvents.NecesidadAsignacionPendiente;
 import ar.edu.utn.dds.k3003.events.productoEvents.StockProductoModificadoEvent;
