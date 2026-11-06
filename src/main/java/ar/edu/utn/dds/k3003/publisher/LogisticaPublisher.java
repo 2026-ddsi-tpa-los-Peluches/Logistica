@@ -3,10 +3,13 @@ package ar.edu.utn.dds.k3003.publisher; // o tu paquete de servicios correspondi
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.EntidadBeneficaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
-import ar.edu.utn.dds.k3003.events.AsignacionActualizadaEvent;
-import ar.edu.utn.dds.k3003.events.DepositoActualizadoEvent;
-import ar.edu.utn.dds.k3003.events.DonadorEvents.DonacionDonadorEntregadaEvent;
-import ar.edu.utn.dds.k3003.events.StockActualizadoEvent;
+import ar.edu.utn.dds.k3003.events.asignacionEvents.AsignacionActualizadaEvent;
+import ar.edu.utn.dds.k3003.events.donadorEvents.DonacionDonadorEntregadaEvent;
+import ar.edu.utn.dds.k3003.events.depositoEvents.DepositoActualizadoEvent;
+import ar.edu.utn.dds.k3003.events.necesidadEvents.NecesidadAsignacionHecha;
+import ar.edu.utn.dds.k3003.events.necesidadEvents.NecesidadAsignacionPendiente;
+import ar.edu.utn.dds.k3003.events.productoEvents.StockProductoModificadoEvent;
+import ar.edu.utn.dds.k3003.events.stockEvents.StockActualizadoEvent;
 import ar.edu.utn.dds.k3003.model.Asignacion;
 import ar.edu.utn.dds.k3003.model.Deposito;
 import ar.edu.utn.dds.k3003.model.Paquete;
@@ -59,31 +62,6 @@ public class LogisticaPublisher {
         rabbitTemplate.convertAndSend("donatrack.eventos", "asignacion", evento);
     }
 
-    public void notificarDeposito(Deposito deposito) {
-        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-                String.valueOf(deposito.getId()),
-                deposito.getNombre(),
-                deposito.getCapacidadMaxima(),
-                deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
-                Instant.now()
-        );
-
-        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
-    }
-
-    public void notificarStock(Deposito deposito, Paquete paquete) {
-        StockActualizadoEvent evento = new StockActualizadoEvent(
-                paquete.getProductoID(),
-                String.valueOf(deposito.getId()),
-                deposito.getNombre(),
-                paquete.getCantidad(),
-                Instant.now()
-        );
-
-        // Routing key exacta para stock que espera tu ConsultasListener ("consultas.stock")
-        rabbitTemplate.convertAndSend("donatrack.eventos", "stock", evento);
-    }
-
     public void notificarDonacionDonadorEntregada(Asignacion asignacion, Paquete paquete, DonacionDTO donacionDTO, NecesidadMaterialDTO necesidadMaterialDTO, EntidadBeneficaDTO entidadBeneficaDTO){
         DonacionDonadorEntregadaEvent evento = new DonacionDonadorEntregadaEvent(
                 donacionDTO.donadorID(),
@@ -92,7 +70,45 @@ public class LogisticaPublisher {
                 paquete.getCantidad()
         );
 
-        eventPublisher.publicar("donador-entidad-donada-exchange", evento);
+        eventPublisher.publicar("donador-entidad-donada", evento);
         System.out.println("Donación entregada enviada a RabbitMQ para donador: " + donacionDTO.donadorID());
     }
+
+    public void notificarNecesidadAsignacionPendiente(Asignacion asignacion, Deposito deposito, int cantidadAAsignar){
+
+        NecesidadAsignacionPendiente evento = new NecesidadAsignacionPendiente(
+                String.valueOf(asignacion.getId()),
+                asignacion.getNecesidadId(),
+                String.valueOf(deposito.getId()),
+                cantidadAAsignar
+        );
+        eventPublisher.publicar("necesidad-asignacion-pendiente", evento);
+        System.out.println("Asignación pendiente enviada a RabbitMQ para agregar a pendientes: " + asignacion.getId());
+    }
+
+    public void notificarNecesidadAsignacionHecha(Asignacion asignacion) {
+        NecesidadAsignacionHecha evento = new NecesidadAsignacionHecha(
+                String.valueOf(asignacion.getId()),
+                asignacion.getNecesidadId()
+        );
+
+        eventPublisher.publicar("necesidad-asignacion-hecha", evento);
+        System.out.println("Asignación completada enviada a RabbitMQ para remover de pendientes: " + asignacion.getId());
+    }
+
+
+    // STOCK
+
+    public void notificarStockProductoModificado(Paquete paquete, Deposito deposito, int cantidadAAsignar) {
+        StockProductoModificadoEvent evento = new StockProductoModificadoEvent(
+                paquete.getProductoID(),
+                String.valueOf(deposito.getId()),
+                deposito.getNombre(),
+                cantidadAAsignar
+        );
+
+        eventPublisher.publicar("producto-stock-modificado", evento);
+        System.out.println("El stock de un porducto se ha modificado, se ha enviado a RabbitMQ para actualizarlo:  " +  paquete.getProductoID());
+    }
+
 }

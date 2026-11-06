@@ -9,11 +9,11 @@ import ar.edu.utn.dds.k3003.catedra.dtos.logistica.*;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
 import ar.edu.utn.dds.k3003.componentes.DonacionesClient;
 import ar.edu.utn.dds.k3003.componentes.DonadoresYEntidadesClient;
-import ar.edu.utn.dds.k3003.events.AsignacionActualizadaEvent;
-import ar.edu.utn.dds.k3003.events.DepositoActualizadoEvent;
-import ar.edu.utn.dds.k3003.events.StockActualizadoEvent;
+import ar.edu.utn.dds.k3003.events.asignacionEvents.AsignacionActualizadaEvent;
+import ar.edu.utn.dds.k3003.events.stockEvents.StockActualizadoEvent;
 import ar.edu.utn.dds.k3003.model.*;
 import ar.edu.utn.dds.k3003.controllers.requests.AsignacionRequest;
+import ar.edu.utn.dds.k3003.publisher.DepositosPublisher;
 import ar.edu.utn.dds.k3003.publisher.LogisticaPublisher;
 import ar.edu.utn.dds.k3003.repositories.asignaciones.AsignacionesRepository;
 import ar.edu.utn.dds.k3003.repositories.depositos.DepositosRepository;
@@ -69,6 +69,7 @@ public class Fachada implements FachadaLogistica {
 
     // PUBLISHERS
     private final LogisticaPublisher logisticaPublisher;
+    private final DepositosPublisher depositosPublisher;
 
     @Autowired
     public Fachada(
@@ -80,7 +81,8 @@ public class Fachada implements FachadaLogistica {
             PaquetesRepository paqueteRepo,
             ApplicationEventPublisher publicadorSpring,
             RabbitTemplate rabbitTemplate,
-            LogisticaPublisher logisticaPublisher
+            LogisticaPublisher logisticaPublisher,
+            DepositosPublisher depositosPublisher
 
     ) {
         this.depositosCreadosCounter = Counter.builder("deposito.creados")
@@ -127,6 +129,7 @@ public class Fachada implements FachadaLogistica {
         this.rabbitTemplate = rabbitTemplate;
 
         this.logisticaPublisher = logisticaPublisher;
+        this.depositosPublisher = depositosPublisher;
     }
 
     @Override
@@ -147,16 +150,9 @@ public class Fachada implements FachadaLogistica {
         this.depositosCreadosCounter.increment();
 
         Deposito depositoConId = depositoRepo.save(deposito);
-        // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-                String.valueOf(depositoConId.getId()),
-                depositoConId.getNombre(),
-                depositoConId.getCapacidadMaxima(),
-                depositoConId.getTipoAlgoritmo() != null ? depositoConId.getTipoAlgoritmo().name() : "DEFAULT",
-                Instant.now()
-        );
-        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
-        // -------------------------------------------------------------
+
+        depositosPublisher.notificarDepositoCreado(depositoConId);
+
         log.info("Depósito creado: id={}, nombre={}, capacidadMaxima={}",
                 depositoConId.getId(), depositoDTO.nombre(), depositoDTO.capacidadMaxima());
 
@@ -189,6 +185,8 @@ public class Fachada implements FachadaLogistica {
                 });
 
         depositoRepo.delete(deposito);
+
+        depositosPublisher.notificarDepositoEliminado(id);
 
         log.info("Depósito eliminado: id={}", id);
     }
@@ -303,26 +301,20 @@ public class Fachada implements FachadaLogistica {
         Paquete paquete = new Paquete(
                 donacionID,
                 productoID,
-                cantidadDonada
+                cantidadDonada,
+                depositoID
         );
 
         deposito.agregarPaquete(paquete);
         depositoRepo.save(deposito);
-        // --- PUBLICAR EVENTO DE STOCK A RABBITMQ ---
-        // Buscamos el paquete recién agregado para tener su ID si corresponde, o mandamos el evento de stock actualizado
-        for (Paquete p : deposito.getStockActual()) {
-            if (p.getDonacionID() != null && p.getDonacionID().equals(donacionID) && p.getProductoID().equals(productoID)) {
-                StockActualizadoEvent eventoStock = new StockActualizadoEvent(
-                        p.getProductoID(),
-                        String.valueOf(deposito.getId()),
-                        deposito.getNombre(),
-                        p.getCantidad(),
-                        Instant.now()
-                );
-                rabbitTemplate.convertAndSend("donatrack.eventos", "stock", eventoStock);
-                break;
-            }
-        }
+
+        DonacionDTO donacionDTO = donacionesClient.obtenerDonacionPorId(donacionID);
+        depositosPublisher.notificarDonacionIngresada(depositoID, donacionID, donacionDTO.donadorID(), cantidadDonada);
+
+        depositosPublisher.notificarPaqueteAgregado(depositoID, paquete);
+
+        // aviso al repartidor de chocolate
+        logisticaPublisher.notificarStockProductoModificado(paquete, deposito, cantidadDonada);
         // ------------------------------------------
 
         // --- REGISTRO DE MÉTRICA 1: Nuevo paquete creado en stock ---
@@ -479,6 +471,15 @@ public class Fachada implements FachadaLogistica {
 
         Asignacion asignacionConId = asignacionRepo.save(asignacion);
 
+        DonacionDTO donacionDTO = donacionesClient.obtenerDonacionPorId(donacionID);
+
+        depositosPublisher.notificarDonacionIngresada(deposito.getId(), donacionID, donacionDTO.donadorID(), cantidadAAsignar );
+
+
+        depositosPublisher.notificarAsignacionEstado(deposito.getId(), "ASIGNADA");
+
+
+
         // --- PUBLICAR EVENTO DE ASIGNACIÓN A RABBITMQ ---
         AsignacionActualizadaEvent eventoAsignacion = new AsignacionActualizadaEvent(
                 String.valueOf(asignacionConId.getId()),
@@ -506,20 +507,21 @@ public class Fachada implements FachadaLogistica {
             Paquete paqueStock = new Paquete(
                     donacionID,
                     productoID,
-                    cantidadSobrante
+                    cantidadSobrante,
+                    paquete.getDepositoID()
             );
 
             deposito.agregarPaquete(paqueStock);
             depositoRepo.save(deposito);
             // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-            DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-                    String.valueOf(deposito.getId()),
-                    deposito.getNombre(),
-                    deposito.getCapacidadMaxima(),
-                    deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
-                    Instant.now()
-            );
-            rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
+//            DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
+//                    String.valueOf(deposito.getId()),
+//                    deposito.getNombre(),
+//                    deposito.getCapacidadMaxima(),
+//                    deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
+//                    Instant.now()
+//            );
+//            rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
 
 
             // --- REGISTRO DE MÉTRICA 1 ---
@@ -555,6 +557,16 @@ public class Fachada implements FachadaLogistica {
 
         Asignacion asignacionConId = asignacionRepo.save(asignacion);
 
+        depositosPublisher.notificarAsignacionEstado(depositoElegido.getId(), "ASIGNADA");
+
+        logisticaPublisher.notificarNecesidadAsignacionPendiente(asignacionConId, depositoElegido, cantidadAAsignar);
+
+        EntidadBeneficaDTO entidad = donadoresYEntidadesClient.obtenerEntidadPorId(Integer.valueOf(necesidad.entidadID()));
+
+        depositosPublisher.notificarEntidadAtendida(depositoElegido.getId(), necesidad, cantidadAAsignar, entidad );
+
+
+
         // --- PUBLICAR EVENTO DE ASIGNACIÓN A RABBITMQ ---
         AsignacionActualizadaEvent eventoAsignacion = new AsignacionActualizadaEvent(
                 String.valueOf(asignacion.getId()),
@@ -578,19 +590,18 @@ public class Fachada implements FachadaLogistica {
         this.tamanioAsignacionSummary.record(cantidadAAsignar);
 
 
+
+
         paqueteElegido.restarCantidad(cantidadAAsignar);
+
+
 
         depositoElegido.setCapacidadRestante(depositoElegido.getCapacidadRestante() + cantidadAAsignar);
         depositoRepo.save(depositoElegido);
-        // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-                String.valueOf(depositoElegido.getId()),
-                depositoElegido.getNombre(),
-                depositoElegido.getCapacidadMaxima(),
-                depositoElegido.getTipoAlgoritmo() != null ? depositoElegido.getTipoAlgoritmo().name() : "DEFAULT",
-                Instant.now()
-        );
-        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
+
+        depositosPublisher.notificarPaqueteStockActualizado(depositoElegido.getId(), paqueteElegido, cantidadAAsignar);
+
+        logisticaPublisher.notificarStockProductoModificado(paqueteElegido, depositoElegido, cantidadAAsignar);
 
 
         log.info("Producto asignado a entidad: necesidadID={}, productoID={}, cantidad={}, depositoID={}, origen={}",
@@ -613,7 +624,8 @@ public class Fachada implements FachadaLogistica {
         Paquete paquete = new Paquete(
                 request.donacionID(),
                 request.productoID(),
-                cantidadAAsignar
+                cantidadAAsignar,
+                deposito.getId()
         );
 
         return AsignarPaquete(paquete, deposito, request.necesidadID(), request.cantidad(), cantidadAAsignar, request.donacionID(), request.productoID()
@@ -637,16 +649,8 @@ public class Fachada implements FachadaLogistica {
 
         deposito.setTipoAlgoritmo(algoritmo);
         depositoRepo.save(deposito);
-        // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-                String.valueOf(deposito.getId()),
-                deposito.getNombre(),
-                deposito.getCapacidadMaxima(),
-                deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
-                Instant.now()
-        );
-        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
 
+        depositosPublisher.notificarAlgoritmoCambiado(depositoId, algoritmo);
 
         log.info("Algoritmo de depósito cambiado: depositoID={}, algoritmo={}", depositoId, algoritmo);
 
@@ -664,14 +668,14 @@ public class Fachada implements FachadaLogistica {
         deposito.setTipoAlgoritmo(tipoAlgoritmo);
         depositoRepo.save(deposito);
         // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-                String.valueOf(deposito.getId()),
-                deposito.getNombre(),
-                deposito.getCapacidadMaxima(),
-                deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
-                Instant.now()
-        );
-        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
+//        DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
+//                String.valueOf(deposito.getId()),
+//                deposito.getNombre(),
+//                deposito.getCapacidadMaxima(),
+//                deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
+//                Instant.now()
+//        );
+//        rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
 
         log.info("Algoritmo de depósito cambiado: depositoID={}, algoritmo={}", depositoID, tipoAlgoritmo);
     }
@@ -754,6 +758,14 @@ public class Fachada implements FachadaLogistica {
         asignacion.completada();
         asignacionRepo.save(asignacion);
 
+        depositosPublisher.notificarDonacionEntregada(paquete.getDepositoID(), paquete.getDonacionID());
+
+        depositosPublisher.notificarAsignacionEstado(paquete.getDepositoID(), "ASIGNADA");
+
+
+        // llamo a rabbiol
+        logisticaPublisher.notificarNecesidadAsignacionHecha(asignacion);
+
 
         // se junta la banda
         DonacionDTO donacionDTO = donacionesClient.obtenerDonacionPorId(paquete.getDonacionID());
@@ -830,13 +842,7 @@ public class Fachada implements FachadaLogistica {
         );
     }
 
-    private Paquete toDomain(PaqueteDTO dto) {
-        return new Paquete(
-                dto.donacionID(),
-                dto.producto(),
-                dto.cantidad()
-        );
-    }
+
 
     private NecesidadLogistica toDomain(NecesidadMaterialDTO dto){
         return new NecesidadLogistica(

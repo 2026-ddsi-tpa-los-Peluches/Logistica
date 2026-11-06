@@ -1,8 +1,7 @@
-package ar.edu.utn.dds.k3003.events.DonadorEvents;
+package ar.edu.utn.dds.k3003.events.donadorEvents;
 
 import lombok.Getter;
 
-import javax.annotation.processing.Generated;
 import java.time.Instant;
 
 @Getter

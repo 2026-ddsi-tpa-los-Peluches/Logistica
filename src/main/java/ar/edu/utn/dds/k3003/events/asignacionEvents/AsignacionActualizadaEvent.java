@@ -1,4 +1,4 @@
-package ar.edu.utn.dds.k3003.events;
+package ar.edu.utn.dds.k3003.events.asignacionEvents;
 
 import java.time.Instant;
 

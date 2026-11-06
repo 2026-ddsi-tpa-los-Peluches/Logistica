@@ -13,14 +13,16 @@ public class Paquete{
     String donacionID;
     String productoID;
     int cantidad;
+    Integer depositoID;
 
 
     public Paquete(){}
 
-    public Paquete( String donacionID,String productoID, int cantidad) {
+    public Paquete( String donacionID,String productoID, int cantidad, Integer depositoID) {
         this.donacionID = donacionID;
         this.productoID = productoID;
         this.cantidad = cantidad;
+        this.depositoID = depositoID;
 
     }
 
@@ -50,5 +52,9 @@ public class Paquete{
 
     public void restarCantidad(int cantidadExtra) {
         this.cantidad -= cantidadExtra;
+    }
+
+    public Integer getDepositoID() {
+        return depositoID;
     }
 }
