@@ -3,12 +3,16 @@ package ar.edu.utn.dds.k3003.publisher; // o tu paquete de servicios correspondi
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.DonacionDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.EntidadBeneficaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
-import ar.edu.utn.dds.k3003.events.asignacionEvents.AsignacionActualizadaEvent;
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.EstadoAsignacionEnum;
+import ar.edu.utn.dds.k3003.events.asignacionEvents.AsignacionCreadaEvent;
+import ar.edu.utn.dds.k3003.events.asignacionEvents.AsignacionEstadoEvent;
+import ar.edu.utn.dds.k3003.events.depositoEvents.DepositoCantidadAsignacionEstadoEvent;
 import ar.edu.utn.dds.k3003.events.donadorEvents.DonacionDonadorEntregadaEvent;
 import ar.edu.utn.dds.k3003.events.necesidadEvents.NecesidadAsignacionHecha;
 import ar.edu.utn.dds.k3003.events.necesidadEvents.NecesidadAsignacionPendiente;
 import ar.edu.utn.dds.k3003.events.productoEvents.StockProductoModificadoEvent;
 import ar.edu.utn.dds.k3003.events.stockEvents.StockActualizadoEvent;
+import ar.edu.utn.dds.k3003.model.AsgnacionRealizadaPor;
 import ar.edu.utn.dds.k3003.model.Asignacion;
 import ar.edu.utn.dds.k3003.model.Deposito;
 import ar.edu.utn.dds.k3003.model.Paquete;
@@ -21,45 +25,18 @@ import java.time.ZoneId;
 @Service
 public class LogisticaPublisher {
 
-    private final RabbitTemplate rabbitTemplate;
     private final EventPublisher eventPublisher;
 
-    public LogisticaPublisher(RabbitTemplate rabbitTemplate, EventPublisher eventPublisher) {
-        this.rabbitTemplate = rabbitTemplate;
+    public LogisticaPublisher(EventPublisher eventPublisher) {
+
         this.eventPublisher = eventPublisher;
     }
 
-    public void notificarAsignacion(Asignacion asignacion, String entidadIdAsociada, String donacionIdAsociada, String depositoIdAsociado) {
-        // Mapeamos LocalDateTime a Instant para que coincida con el record del Servicio de Consultas
-        Instant fechaAsignacionInst = asignacion.getFecha() != null ?
-                asignacion.getFecha().atZone(ZoneId.systemDefault()).toInstant() : Instant.now();
 
-        Instant fechaEntregaInst = null;
-        // Buscamos en el historial si hay una fecha de completada
-        var historialCompletada = asignacion.getHistorialEstadoAsignaciones().stream()
-                .filter(h -> h.getEstado().name().equals("COMPLETADA"))
-                .findFirst();
-        if (historialCompletada.isPresent()) {
-            fechaEntregaInst = historialCompletada.get().getFecha().atZone(ZoneId.systemDefault()).toInstant();
-        }
 
-        AsignacionActualizadaEvent evento = new AsignacionActualizadaEvent(
-                String.valueOf(asignacion.getId()),
-                asignacion.getPaqueteId() != null ? String.valueOf(asignacion.getPaqueteId()) : null,
-                asignacion.getNecesidadId(),
-                depositoIdAsociado, // ID del depósito al que pertenece el paquete/asignación
-                donacionIdAsociada, // ID de donación asociada al paquete
-                entidadIdAsociada,  // ID de la entidad (viene de necesidades o del dominio)
-                asignacion.getCantidad(),
-                asignacion.getEstado() != null ? asignacion.getEstado().name() : "ASIGNADA",
-                fechaAsignacionInst,
-                null, // fechaIngresoDonacion (si la tenés a mano en el paquete, la pasás)
-                fechaEntregaInst,
-                Instant.now() // fechaEvento obligatoria para el Actualizador de Mongo
-        );
 
-        rabbitTemplate.convertAndSend("donatrack.eventos", "asignacion", evento);
-    }
+
+
 
     public void notificarDonacionDonadorEntregada(Asignacion asignacion, Paquete paquete, DonacionDTO donacionDTO, NecesidadMaterialDTO necesidadMaterialDTO, EntidadBeneficaDTO entidadBeneficaDTO){
         DonacionDonadorEntregadaEvent evento = new DonacionDonadorEntregadaEvent(
@@ -109,5 +86,8 @@ public class LogisticaPublisher {
         eventPublisher.publicar("producto-stock-modificado", evento);
         System.out.println("El stock de un porducto se ha modificado, se ha enviado a RabbitMQ para actualizarlo:  " +  paquete.getProductoID());
     }
+
+
+
 
 }

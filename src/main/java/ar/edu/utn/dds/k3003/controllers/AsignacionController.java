@@ -54,30 +54,33 @@ public class AsignacionController {
         }
     }
 
-    @PostMapping
-    public ResponseEntity<?> AsignarProductoAEntidad(
-            @RequestBody NecesidadMaterialDTO request
-    ) {
-        try {
-
-            Integer cantidadAsignada = fachada.asignarProductoAEntidad(request,AsgnacionRealizadaPor.ALGORITMO_MATCHMAKING);
-
-            return ResponseEntity.ok(cantidadAsignada);
-
-        } catch (NoSuchElementException e) {
-
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
-
-        } catch (IllegalArgumentException e) {
-
-            return ResponseEntity
-                    .badRequest()
-                    .body(e.getMessage());
-        }
-
-    }
+//
+//    lo resuelve con /externa y con /desde-donacion
+//
+//    @PostMapping
+//    public ResponseEntity<?> AsignarProductoAEntidad(
+//            @RequestBody NecesidadMaterialDTO request
+//    ) {
+//        try {
+//
+//            Integer cantidadAsignada = fachada.asignarProductoAEntidad(request,AsgnacionRealizadaPor.ALGORITMO_MATCHMAKING);
+//
+//            return ResponseEntity.ok(cantidadAsignada);
+//
+//        } catch (NoSuchElementException e) {
+//
+//            return ResponseEntity
+//                    .status(HttpStatus.NOT_FOUND)
+//                    .body(e.getMessage());
+//
+//        } catch (IllegalArgumentException e) {
+//
+//            return ResponseEntity
+//                    .badRequest()
+//                    .body(e.getMessage());
+//        }
+//
+//    }
 
 
 
@@ -87,7 +90,7 @@ public class AsignacionController {
     ) {
         try {
 
-            Integer cantidadAsignada = fachada.asignarProductoAEntidad(request, AsgnacionRealizadaPor.SOLICITUD_EXTERNA);
+            Integer cantidadAsignada = fachada.asignarProductoAEntidad(request);
 
             return ResponseEntity.ok(cantidadAsignada);
 
