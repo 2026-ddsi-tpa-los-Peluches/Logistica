@@ -11,9 +11,7 @@ import ar.edu.utn.dds.k3003.componentes.DonacionesClient;
 import ar.edu.utn.dds.k3003.componentes.DonadoresYEntidadesClient;
 import ar.edu.utn.dds.k3003.model.*;
 import ar.edu.utn.dds.k3003.controllers.requests.AsignacionRequest;
-import ar.edu.utn.dds.k3003.publisher.AsignacionPublisher;
-import ar.edu.utn.dds.k3003.publisher.DepositosPublisher;
-import ar.edu.utn.dds.k3003.publisher.LogisticaPublisher;
+import ar.edu.utn.dds.k3003.publisher.*;
 import ar.edu.utn.dds.k3003.repositories.asignaciones.AsignacionesRepository;
 import ar.edu.utn.dds.k3003.repositories.depositos.DepositosRepository;
 import ar.edu.utn.dds.k3003.repositories.paquetes.PaquetesRepository;
@@ -67,9 +65,12 @@ public class Fachada implements FachadaLogistica {
 
 
     // PUBLISHERS
-    private final LogisticaPublisher logisticaPublisher;
     private final DepositosPublisher depositosPublisher;
     private final AsignacionPublisher asignacionPublisher;
+    private final PaquetePublisher paquetePublisher;
+    private final DonadorPublisher donadorPublisher;
+    private final NecesidadPublisher necesidadPublisher;
+    private final ProductoPublisher productoPublisher;
 
     @Autowired
     public Fachada(
@@ -81,9 +82,12 @@ public class Fachada implements FachadaLogistica {
             PaquetesRepository paqueteRepo,
             ApplicationEventPublisher publicadorSpring,
             RabbitTemplate rabbitTemplate,
-            LogisticaPublisher logisticaPublisher,
             DepositosPublisher depositosPublisher,
-             AsignacionPublisher asignacionPublisher
+             AsignacionPublisher asignacionPublisher,
+            PaquetePublisher paquetePublisher,
+            DonadorPublisher donadorPublisher,
+            NecesidadPublisher necesidadPublisher,
+            ProductoPublisher productoPublisher
 
     ) {
         this.depositosCreadosCounter = Counter.builder("deposito.creados")
@@ -129,9 +133,13 @@ public class Fachada implements FachadaLogistica {
         this.publicadorSpring = publicadorSpring;
         this.rabbitTemplate = rabbitTemplate;
 
-        this.logisticaPublisher = logisticaPublisher;
         this.depositosPublisher = depositosPublisher;
         this.asignacionPublisher = asignacionPublisher;
+        this.paquetePublisher = paquetePublisher;
+        this.donadorPublisher = donadorPublisher;
+        this.necesidadPublisher = necesidadPublisher;
+        this.productoPublisher = productoPublisher;
+
     }
 
     @Override
@@ -310,13 +318,15 @@ public class Fachada implements FachadaLogistica {
         deposito.agregarPaquete(paquete);
         depositoRepo.save(deposito);
 
+        paquetePublisher.notificarPaqueteCreado(paquete);
+
         DonacionDTO donacionDTO = donacionesClient.obtenerDonacionPorId(donacionID);
         depositosPublisher.notificarDonacionIngresada(depositoID, donacionID, donacionDTO.donadorID(), cantidadDonada);
 
         depositosPublisher.notificarPaqueteAgregado(depositoID, paquete);
 
         // aviso al repartidor de chocolate
-        logisticaPublisher.notificarStockProductoModificado(paquete, deposito, cantidadDonada);
+        productoPublisher.notificarStockProductoModificado(paquete, deposito, cantidadDonada);
         // ------------------------------------------
 
         // --- REGISTRO DE MÉTRICA 1: Nuevo paquete creado en stock ---
@@ -481,13 +491,15 @@ public class Fachada implements FachadaLogistica {
 
         NecesidadMaterialDTO necesidadMaterialDTO = donadoresYEntidadesClient.obtenerNecesidadPorId(necesidadID);
 
-
         // aviso conejo asignacion creada para documento de asignacion
         asignacionPublisher.notificarAsignacionCreada(asignacionConId, deposito, donacionID, necesidadMaterialDTO, AsgnacionRealizadaPor.ALGORITMO_MATCHMAKING);
+
+
 
         // --- REGISTRO DE MÉTRICAS 3 Y 4 ---
         this.asignacionesMatchmakingCounter.increment();
         this.tamanioAsignacionSummary.record(cantidadAAsignar);
+
 
 
         log.info("Asignación creada (matchmaking): id={}, paqueteID={}, necesidadID={}, cantidad={}",
@@ -522,7 +534,7 @@ public class Fachada implements FachadaLogistica {
 
         depositosPublisher.notificarAsignacionEstado(depositoElegido.getId(), EstadoAsignacionEnum.ASIGNADA);
 
-        logisticaPublisher.notificarNecesidadAsignacionPendiente(asignacionConId, depositoElegido, cantidadAAsignar);
+        necesidadPublisher.notificarNecesidadAsignacionPendiente(asignacionConId, depositoElegido, cantidadAAsignar);
 
         EntidadBeneficaDTO entidad = donadoresYEntidadesClient.obtenerEntidadPorId(Integer.valueOf(necesidad.entidadID()));
 
@@ -553,9 +565,11 @@ public class Fachada implements FachadaLogistica {
         depositoElegido.setCapacidadRestante(depositoElegido.getCapacidadRestante() + cantidadAAsignar);
         depositoRepo.save(depositoElegido);
 
+        paquetePublisher.notificarPaqueteRestarCantidad(paqueteElegido, cantidadAAsignar);
+
         depositosPublisher.notificarPaqueteStockActualizado(depositoElegido.getId(), paqueteElegido, cantidadAAsignar);
 
-        logisticaPublisher.notificarStockProductoModificado(paqueteElegido, depositoElegido, cantidadAAsignar);
+        productoPublisher.notificarStockProductoModificado(paqueteElegido, depositoElegido, cantidadAAsignar);
 
 
         log.info("Producto asignado a entidad: necesidadID={}, productoID={}, cantidad={}, depositoID={}, origen={}",
@@ -584,7 +598,15 @@ public class Fachada implements FachadaLogistica {
                 deposito.getId()
         );
 
-        return AsignarPaquete(paquete, deposito, request.necesidadID(), request.cantidad(), cantidadAAsignar, request.donacionID(), request.productoID()
+        deposito.agregarPaquete(paquete);
+        depositoRepo.save(deposito);
+
+        paquetePublisher.notificarPaqueteCreado(paquete);
+
+        depositosPublisher.notificarPaqueteAgregado(request.depositoID(), paquete);
+
+
+        return AsignarPaquete(paquete, deposito, request.necesidadID(), cantidadAAsignar, request.donacionID(), request.productoID()
         );
     }
 
@@ -724,7 +746,7 @@ public class Fachada implements FachadaLogistica {
 
 
         // llamo a rabbiol
-        logisticaPublisher.notificarNecesidadAsignacionHecha(asignacion);
+        necesidadPublisher.notificarNecesidadAsignacionHecha(asignacion);
 
 
         // se junta la banda
@@ -733,8 +755,7 @@ public class Fachada implements FachadaLogistica {
         EntidadBeneficaDTO entidadBeneficaDTO = donadoresYEntidadesClient.obtenerEntidadPorId(Integer.valueOf(necesidadMaterialDTO.entidadID()));
 
         // envio conejo chocolat
-        logisticaPublisher.notificarDonacionDonadorEntregada(
-                asignacion,
+        donadorPublisher.notificarDonacionDonadorEntregada(
                 paquete,
                 donacionDTO,
                 necesidadMaterialDTO,
