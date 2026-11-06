@@ -9,10 +9,9 @@ import ar.edu.utn.dds.k3003.catedra.dtos.logistica.*;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
 import ar.edu.utn.dds.k3003.componentes.DonacionesClient;
 import ar.edu.utn.dds.k3003.componentes.DonadoresYEntidadesClient;
-import ar.edu.utn.dds.k3003.events.asignacionEvents.AsignacionActualizadaEvent;
-import ar.edu.utn.dds.k3003.events.stockEvents.StockActualizadoEvent;
 import ar.edu.utn.dds.k3003.model.*;
 import ar.edu.utn.dds.k3003.controllers.requests.AsignacionRequest;
+import ar.edu.utn.dds.k3003.publisher.AsignacionPublisher;
 import ar.edu.utn.dds.k3003.publisher.DepositosPublisher;
 import ar.edu.utn.dds.k3003.publisher.LogisticaPublisher;
 import ar.edu.utn.dds.k3003.repositories.asignaciones.AsignacionesRepository;
@@ -70,6 +69,7 @@ public class Fachada implements FachadaLogistica {
     // PUBLISHERS
     private final LogisticaPublisher logisticaPublisher;
     private final DepositosPublisher depositosPublisher;
+    private final AsignacionPublisher asignacionPublisher;
 
     @Autowired
     public Fachada(
@@ -82,7 +82,8 @@ public class Fachada implements FachadaLogistica {
             ApplicationEventPublisher publicadorSpring,
             RabbitTemplate rabbitTemplate,
             LogisticaPublisher logisticaPublisher,
-            DepositosPublisher depositosPublisher
+            DepositosPublisher depositosPublisher,
+             AsignacionPublisher asignacionPublisher
 
     ) {
         this.depositosCreadosCounter = Counter.builder("deposito.creados")
@@ -130,6 +131,7 @@ public class Fachada implements FachadaLogistica {
 
         this.logisticaPublisher = logisticaPublisher;
         this.depositosPublisher = depositosPublisher;
+        this.asignacionPublisher = asignacionPublisher;
     }
 
     @Override
@@ -473,30 +475,17 @@ public class Fachada implements FachadaLogistica {
 
         DonacionDTO donacionDTO = donacionesClient.obtenerDonacionPorId(donacionID);
 
+        // aviso a rabbit que llego la donacion a logistica para documento de donacion
         depositosPublisher.notificarDonacionIngresada(deposito.getId(), donacionID, donacionDTO.donadorID(), cantidadAAsignar );
 
+        // aviso a rabbit que cambio el estado de la asignacion para documento de deposito
+        depositosPublisher.notificarAsignacionEstado(deposito.getId(), EstadoAsignacionEnum.ASIGNADA);
 
-        depositosPublisher.notificarAsignacionEstado(deposito.getId(), "ASIGNADA");
+        NecesidadMaterialDTO necesidadMaterialDTO = donadoresYEntidadesClient.obtenerNecesidadPorId(necesidadID);
 
 
-
-        // --- PUBLICAR EVENTO DE ASIGNACIÓN A RABBITMQ ---
-        AsignacionActualizadaEvent eventoAsignacion = new AsignacionActualizadaEvent(
-                String.valueOf(asignacionConId.getId()),
-                asignacionConId.getPaqueteId() != null ? String.valueOf(asignacionConId.getPaqueteId()) : null,
-                asignacionConId.getNecesidadId(),
-                null, // depositoId si lo tenés a mano
-                null, // donacionId si lo tenés a mano
-                null, // entidadId
-                asignacionConId.getCantidad(),
-                asignacionConId.getEstado() != null ? asignacionConId.getEstado().name() : "ASIGNADA",
-                asignacionConId.getFecha() != null ? asignacionConId.getFecha().atZone(java.time.ZoneId.systemDefault()).toInstant() : Instant.now(),
-                null,
-                null,
-                Instant.now()
-        );
-        rabbitTemplate.convertAndSend("donatrack.eventos", "asignacion", eventoAsignacion);
-        // -----------------------------------------------
+        // aviso conejo asignacion creada para documento de asignacion
+        asignacionPublisher.notificarAsignacionCreada(asignacionConId, deposito, donacionID, necesidadMaterialDTO, AsgnacionRealizadaPor.ALGORITMO_MATCHMAKING);
 
         // --- REGISTRO DE MÉTRICAS 3 Y 4 ---
         this.asignacionesMatchmakingCounter.increment();
@@ -504,25 +493,17 @@ public class Fachada implements FachadaLogistica {
 
         int cantidadSobrante = cantidadTotal - cantidadAAsignar;
         if(cantidadSobrante > 0){
-            Paquete paqueStock = new Paquete(
+            Paquete paqueteStock = new Paquete(
                     donacionID,
                     productoID,
                     cantidadSobrante,
                     paquete.getDepositoID()
             );
 
-            deposito.agregarPaquete(paqueStock);
+            deposito.agregarPaquete(paqueteStock);
             depositoRepo.save(deposito);
-            // --- PUBLICAR EVENTO A RABBITMQ PARA EL SERVICIO DE CONSULTAS ---
-//            DepositoActualizadoEvent evento = new DepositoActualizadoEvent(
-//                    String.valueOf(deposito.getId()),
-//                    deposito.getNombre(),
-//                    deposito.getCapacidadMaxima(),
-//                    deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT",
-//                    Instant.now()
-//            );
-//            rabbitTemplate.convertAndSend("donatrack.eventos", "deposito", evento);
 
+            depositosPublisher.notificarPaqueteAgregado(deposito.getId(), paqueteStock);
 
             // --- REGISTRO DE MÉTRICA 1 ---
             this.paquetesCreadosCounter.increment();
@@ -535,7 +516,7 @@ public class Fachada implements FachadaLogistica {
     }
 
     @Transactional
-    public int asignarProductoAEntidad(NecesidadMaterialDTO necesidad, AsgnacionRealizadaPor tipoAsignacion) {
+    public int asignarProductoAEntidad(NecesidadMaterialDTO necesidad) {
         String productoID = necesidad.productoSolicitadoID();
         int cantidadNecesitada = necesidad.cantidadObjetivo() - necesidad.cantidadRecibida();
 
@@ -544,6 +525,7 @@ public class Fachada implements FachadaLogistica {
         Deposito depositoElegido = mejorOpcion.deposito();
         Paquete paqueteElegido = mejorOpcion.paquete();
 
+
         int cantidadAAsignar = cuantoAsignar(cantidadNecesitada, paqueteElegido.getCantidad());
 
         Asignacion asignacion = new Asignacion(
@@ -551,13 +533,13 @@ public class Fachada implements FachadaLogistica {
                 necesidad.id(),
                 LocalDateTime.now(),
                 EstadoAsignacionEnum.ASIGNADA,
-                tipoAsignacion,
+                AsgnacionRealizadaPor.SOLICITUD_EXTERNA,
                 cantidadAAsignar
         );
 
         Asignacion asignacionConId = asignacionRepo.save(asignacion);
 
-        depositosPublisher.notificarAsignacionEstado(depositoElegido.getId(), "ASIGNADA");
+        depositosPublisher.notificarAsignacionEstado(depositoElegido.getId(), EstadoAsignacionEnum.ASIGNADA);
 
         logisticaPublisher.notificarNecesidadAsignacionPendiente(asignacionConId, depositoElegido, cantidadAAsignar);
 
@@ -566,24 +548,15 @@ public class Fachada implements FachadaLogistica {
         depositosPublisher.notificarEntidadAtendida(depositoElegido.getId(), necesidad, cantidadAAsignar, entidad );
 
 
-
-        // --- PUBLICAR EVENTO DE ASIGNACIÓN A RABBITMQ ---
-        AsignacionActualizadaEvent eventoAsignacion = new AsignacionActualizadaEvent(
-                String.valueOf(asignacion.getId()),
-                asignacionConId.getPaqueteId() != null ? String.valueOf(asignacion.getPaqueteId()) : null,
-                asignacionConId.getNecesidadId(),
-                null, // depositoId si lo tenés a mano
-                null, // donacionId si lo tenés a mano
-                null, // entidadId
-                asignacionConId.getCantidad(),
-                asignacionConId.getEstado() != null ? asignacionConId.getEstado().name() : "ASIGNADA",
-                asignacionConId.getFecha() != null ? asignacionConId.getFecha().atZone(java.time.ZoneId.systemDefault()).toInstant() : Instant.now(),
-                null,
-                null,
-                Instant.now()
+        // aviso asignacion por solicitud externa
+        asignacionPublisher.notificarAsignacionCreada(
+                asignacion,
+                depositoElegido,
+                paqueteElegido.getDonacionID(),
+                necesidad,
+                AsgnacionRealizadaPor.SOLICITUD_EXTERNA
         );
-        rabbitTemplate.convertAndSend("donatrack.eventos", "asignacion", eventoAsignacion);
-        // -----------------------------------------------
+
 
         // --- REGISTRO DE MÉTRICAS 3 Y 4 ---
         this.asignacionesSolicitudExternaCounter.increment();
@@ -605,7 +578,7 @@ public class Fachada implements FachadaLogistica {
 
 
         log.info("Producto asignado a entidad: necesidadID={}, productoID={}, cantidad={}, depositoID={}, origen={}",
-                necesidad.id(), productoID, cantidadAAsignar, depositoElegido.getId(), tipoAsignacion);
+                necesidad.id(), productoID, cantidadAAsignar, depositoElegido.getId(),  AsgnacionRealizadaPor.SOLICITUD_EXTERNA);
 
         return cantidadAAsignar;
     }
@@ -760,7 +733,11 @@ public class Fachada implements FachadaLogistica {
 
         depositosPublisher.notificarDonacionEntregada(paquete.getDepositoID(), paquete.getDonacionID());
 
-        depositosPublisher.notificarAsignacionEstado(paquete.getDepositoID(), "ASIGNADA");
+        // le aviso al donejo para actualizar deposito
+        depositosPublisher.notificarAsignacionEstado(paquete.getDepositoID(), EstadoAsignacionEnum.COMPLETADA);
+
+        // le aviso al donejo para actualizar asignacion
+        asignacionPublisher.notificarAsignacionEstado(asignacionId, EstadoAsignacionEnum.COMPLETADA);
 
 
         // llamo a rabbiol

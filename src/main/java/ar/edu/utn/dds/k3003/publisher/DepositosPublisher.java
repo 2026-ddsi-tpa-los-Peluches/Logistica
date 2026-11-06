@@ -2,6 +2,7 @@ package ar.edu.utn.dds.k3003.publisher;
 
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.EntidadBeneficaDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.EstadoAsignacionEnum;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
 import ar.edu.utn.dds.k3003.events.depositoEvents.*;
 import ar.edu.utn.dds.k3003.model.Deposito;
@@ -90,10 +91,10 @@ public class DepositosPublisher {
         System.out.println("Evento de entidad atendida enviado a RabbitMQ para depósito ID: " + depositoId);
     }
 
-    public void notificarAsignacionEstado(Integer depositoId, String estado) {
+    public void notificarAsignacionEstado(Integer depositoId, EstadoAsignacionEnum estado) {
         DepositoCantidadAsignacionEstadoEvent evento = new DepositoCantidadAsignacionEstadoEvent(
                 String.valueOf(depositoId),
-                estado
+                estado.toString()
         );
 
         eventPublisher.publicar("deposito-cantidad-asignacion-estado", evento);
