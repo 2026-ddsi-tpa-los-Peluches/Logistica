@@ -16,6 +16,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +33,7 @@ public class LogisticaWorker extends DefaultConsumer {
     private final LogisticaClient logisticaClient;
     private final ObjectMapper objectMapper;
 
-    public LogisticaWorker(Channel channel,
+    public LogisticaWorker(@Qualifier("workerRabbitChannel")Channel channel,
                            @Value("${queue.name}") String queueName, // 🟢 Spring inyecta la propiedad del application.properties
                            DonadoresYEntidadesClient donadoresEntidadesClient,
                            LogisticaClient logisticaClient) {

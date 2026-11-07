@@ -28,7 +28,7 @@ public class WorkerRabbitConfig {
     private String urlLogistica;
 
     // 1. Le enseñamos a Spring a crear el Channel de RabbitMQ
-    @Bean
+    @Bean(name = "workerRabbitChannel")
     public Channel rabbitChannel() throws Exception {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost(queueHost);
