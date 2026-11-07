@@ -26,7 +26,7 @@ public class DepositosPublisher {
         String algoritmo = deposito.getTipoAlgoritmo() != null ? deposito.getTipoAlgoritmo().name() : "DEFAULT";
 
         DepositoCreadoEvent evento = new DepositoCreadoEvent(
-                String.valueOf(deposito.getId()),
+                String.valueOf(deposito.getId()), // ID de Postgres a String
                 deposito.getNombre(),
                 deposito.getDireccion(),
                 algoritmo,
@@ -34,7 +34,7 @@ public class DepositosPublisher {
         );
 
         eventPublisher.publicar("deposito-creado", evento);
-        System.out.println("Depósito creado enviado a RabbitMQ ID: " + deposito.getId());
+        System.out.println("Depósito creado enviado a RabbitMQ con ID: " + deposito.getId());
     }
 
     public void notificarDepositoEliminado(Integer depositoId) {
