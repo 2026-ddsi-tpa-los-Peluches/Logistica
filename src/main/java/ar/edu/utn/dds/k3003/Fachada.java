@@ -607,14 +607,14 @@ public class Fachada implements FachadaLogistica {
 
         depositoRepo.flush();
 
+        Paquete paquetePersistido = deposito.getStockActual().getLast();
 
-
-        paquetePublisher.notificarPaqueteCreado(paquete);
+        paquetePublisher.notificarPaqueteCreado(paquetePersistido);
 
         depositosPublisher.notificarPaqueteAgregado(request.depositoID(), paquete);
 
 
-        return AsignarPaquete(paquete, deposito, request.necesidadID(), cantidadAAsignar, request.donacionID(), request.productoID()
+        return AsignarPaquete(paquetePersistido, deposito, request.necesidadID(), cantidadAAsignar, request.donacionID(), request.productoID()
         );
     }
 
