@@ -33,7 +33,7 @@ public class LogisticaWorker extends DefaultConsumer {
     private final LogisticaClient logisticaClient;
     private final ObjectMapper objectMapper;
 
-    public LogisticaWorker(@Qualifier("workerRabbitChannel")Channel channel,
+    public LogisticaWorker(Channel channel,
                            @Value("${queue.name}") String queueName, // 🟢 Spring inyecta la propiedad del application.properties
                            DonadoresYEntidadesClient donadoresEntidadesClient,
                            LogisticaClient logisticaClient) {
