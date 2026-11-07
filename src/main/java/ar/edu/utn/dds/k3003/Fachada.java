@@ -573,7 +573,8 @@ public class Fachada implements FachadaLogistica {
 
         depositosPublisher.notificarPaqueteStockActualizado(depositoElegido.getId(), paqueteElegido, cantidadAAsignar);
 
-        productoPublisher.notificarStockProductoModificado(paqueteElegido, depositoElegido, cantidadAAsignar);
+        // El stock del producto SALE del depósito: delta negativo (el evento suma el delta tal cual).
+        productoPublisher.notificarStockProductoModificado(paqueteElegido, depositoElegido, -cantidadAAsignar);
 
 
         log.info("Producto asignado a entidad: necesidadID={}, productoID={}, cantidad={}, depositoID={}, origen={}",
@@ -612,6 +613,12 @@ public class Fachada implements FachadaLogistica {
         paquetePublisher.notificarPaqueteCreado(paquetePersistido);
 
         depositosPublisher.notificarPaqueteAgregado(request.depositoID(), paquete);
+
+        // Stock del producto: la donación entra completa y una parte sale directo a la necesidad,
+        // así que el neto que queda en el depósito es el sobrante del paquete.
+        if (paquetePersistido.getCantidad() > 0) {
+            productoPublisher.notificarStockProductoModificado(paquetePersistido, deposito, paquetePersistido.getCantidad());
+        }
 
 
         return AsignarPaquete(paquetePersistido, deposito, request.necesidadID(), cantidadAAsignar, request.donacionID(), request.productoID()
