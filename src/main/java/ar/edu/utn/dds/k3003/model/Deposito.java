@@ -72,6 +72,7 @@ public class Deposito {
 
         this.stockActual.add(paqueteNuevo);
 
+
         // 3. Descontamos la capacidad restante
         this.capacidadRestante -= paqueteNuevo.getCantidad();
     }

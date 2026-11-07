@@ -318,6 +318,10 @@ public class Fachada implements FachadaLogistica {
         deposito.agregarPaquete(paquete);
         depositoRepo.save(deposito);
 
+        depositoRepo.flush();
+
+
+
         paquetePublisher.notificarPaqueteCreado(paquete);
 
         DonacionDTO donacionDTO = donacionesClient.obtenerDonacionPorId(donacionID);
@@ -600,6 +604,10 @@ public class Fachada implements FachadaLogistica {
 
         deposito.agregarPaquete(paquete);
         depositoRepo.save(deposito);
+
+        depositoRepo.flush();
+
+
 
         paquetePublisher.notificarPaqueteCreado(paquete);
 
