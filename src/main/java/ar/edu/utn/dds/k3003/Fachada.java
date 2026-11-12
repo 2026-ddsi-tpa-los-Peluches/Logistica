@@ -294,7 +294,7 @@ public class Fachada implements FachadaLogistica {
     }
 
 
-
+    @Transactional
     public void guardarEnStock(Integer depositoID, String donacionID, String productoID, Integer cantidadDonada){
         Deposito deposito = depositoRepo.findById(depositoID)
                 .orElseThrow(() -> {
@@ -316,11 +316,7 @@ public class Fachada implements FachadaLogistica {
         );
 
         deposito.agregarPaquete(paquete);
-        depositoRepo.save(deposito);
-
         depositoRepo.flush();
-
-
 
         paquetePublisher.notificarPaqueteCreado(paquete);
 
@@ -604,24 +600,21 @@ public class Fachada implements FachadaLogistica {
         );
 
         deposito.agregarPaquete(paquete);
-        depositoRepo.save(deposito);
-
         depositoRepo.flush();
 
-        Paquete paquetePersistido = deposito.getStockActual().getLast();
 
-        paquetePublisher.notificarPaqueteCreado(paquetePersistido);
+        paquetePublisher.notificarPaqueteCreado(paquete);
 
         depositosPublisher.notificarPaqueteAgregado(request.depositoID(), paquete);
 
         // Stock del producto: la donación entra completa y una parte sale directo a la necesidad,
         // así que el neto que queda en el depósito es el sobrante del paquete.
-        if (paquetePersistido.getCantidad() > 0) {
-            productoPublisher.notificarStockProductoModificado(paquetePersistido, deposito, paquetePersistido.getCantidad());
+        if (paquete.getCantidad() > 0) {
+            productoPublisher.notificarStockProductoModificado(paquete, deposito, paquete.getCantidad());
         }
 
 
-        return AsignarPaquete(paquetePersistido, deposito, request.necesidadID(), cantidadAAsignar, request.donacionID(), request.productoID()
+        return AsignarPaquete(paquete, deposito, request.necesidadID(), cantidadAAsignar, request.donacionID(), request.productoID()
         );
     }
 
