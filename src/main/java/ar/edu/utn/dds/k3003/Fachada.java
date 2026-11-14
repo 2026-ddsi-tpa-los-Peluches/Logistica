@@ -764,7 +764,7 @@ public class Fachada implements FachadaLogistica {
 
         // envio conejo chocolat
         donadorPublisher.notificarDonacionDonadorEntregada(
-                paquete,
+                asignacion,
                 donacionDTO,
                 necesidadMaterialDTO,
                 entidadBeneficaDTO
